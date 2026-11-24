@@ -6,7 +6,7 @@ const byTopic = id => TOPICS.find(t => t.id === id);
 const NOTES = new Set(['1.3', '1.4', '1.5', '1.6', '1.9', '1.11', '1.12', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '2.9']);
 const UNITS = { 1: 'Unit 1: Using objects and methods', 2: 'Unit 2: Selection and iteration' };
 const KIND = { trace: 'Trace the code', bug: 'Bug hunt', fill: 'Fill the blank', mc: 'Concept check' };
-const VERSION = 'v1.1';
+const VERSION = 'v1.2';
 
 /* ---------- saved progress ---------- */
 const KEY = 'chronicle-csa-v1';
@@ -30,6 +30,66 @@ const solid = () => QS.filter(q => strength(q) >= 0.7).length;
 const solvedN = () => PROBS.filter(p => S.w[p.id] && S.w[p.id].solved).length;
 let sampleFn = null;
 try { if (window.claude && window.claude.use) window.claude.use('sample').then(f => { sampleFn = f; const b = document.getElementById('wask'); if (b && f) b.hidden = false; }).catch(() => {}); } catch (e) {}
+
+
+/* ---------- sound: synthesized 8-bit / terminal sounds, no audio files ---------- */
+const SFX = (() => {
+  let ctx = null, on = S.sound !== false, lastStep = 0;
+  const ac = () => {
+    if (!ctx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; try { ctx = new C(); } catch (e) { return null; } }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  };
+  function blip(c, f, t, dur, o = {}) {
+    const osc = c.createOscillator(), g = c.createGain(), vol = o.vol ?? 0.05;
+    osc.type = o.type || 'square'; osc.frequency.setValueAtTime(f, t);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.setValueAtTime(vol, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    let out = g;
+    if (o.lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.lp; g.connect(fl); out = fl; }
+    osc.connect(g); out.connect(c.destination); osc.start(t); osc.stop(t + dur + 0.02);
+  }
+  function click(c, t, o = {}) {
+    const len = Math.floor(c.sampleRate * (o.dur || 0.018)), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf; f.type = 'highpass'; f.frequency.value = o.hp || 3200; g.gain.value = o.vol || 0.22;
+    src.connect(f).connect(g).connect(c.destination); src.start(t);
+  }
+  const arp = (c, t, notes, gap, dur, vol, type) => notes.forEach((f, i) => blip(c, f, t + i * gap, dur, { vol, type }));
+  const SND = {
+    tap: (c, t) => click(c, t),
+    key: (c, t) => click(c, t, { dur: 0.012, hp: 4200, vol: 0.14 }),
+    step: (c, t) => blip(c, 1320, t, 0.028, { vol: 0.025 }),
+    back: (c, t) => blip(c, 990, t, 0.028, { vol: 0.025 }),
+    rewind: (c, t) => blip(c, 1400, t, 0.12, { vol: 0.03, to: 300 }),
+    ff: (c, t) => blip(c, 300, t, 0.12, { vol: 0.03, to: 1400 }),
+    done: (c, t) => arp(c, t, [784, 1047], 0.07, 0.08, 0.04),
+    crash: (c, t) => { blip(c, 160, t, 0.09, { vol: 0.06, type: 'sawtooth', lp: 900 }); blip(c, 120, t + 0.11, 0.16, { vol: 0.06, type: 'sawtooth', lp: 900 }); },
+    right: (c, t) => arp(c, t, [1047, 1568], 0.07, 0.09, 0.045),
+    wrong: (c, t) => { blip(c, 196, t, 0.11, { vol: 0.05 }); blip(c, 147, t + 0.12, 0.2, { vol: 0.05 }); },
+    streak: (c, t) => arp(c, t, [1047, 1319, 1568, 2093, 2637], 0.045, 0.06, 0.035),
+    run: (c, t) => blip(c, 500, t, 0.09, { vol: 0.035, to: 1600 }),
+    compile: (c, t) => { blip(c, 90, t, 0.22, { vol: 0.08, type: 'sawtooth', lp: 700 }); blip(c, 93, t, 0.22, { vol: 0.06, type: 'sawtooth', lp: 700 }); },
+    pass: (c, t) => { arp(c, t, [523, 659, 784, 1047], 0.06, 0.07, 0.04); arp(c, t + 0.26, [1319, 1568], 0.0, 0.32, 0.03, 'triangle'); },
+    fail: (c, t) => { blip(c, 440, t, 0.09, { vol: 0.045 }); blip(c, 330, t + 0.1, 0.09, { vol: 0.045 }); blip(c, 247, t + 0.2, 0.18, { vol: 0.045 }); },
+    hint: (c, t) => { blip(c, 1760, t, 0.05, { vol: 0.03, type: 'triangle' }); blip(c, 2349, t + 0.06, 0.09, { vol: 0.03, type: 'triangle' }); },
+    reveal: (c, t) => blip(c, 1600, t, 0.25, { vol: 0.03, to: 400, type: 'triangle' }),
+    msg: (c, t) => arp(c, t, [880, 1175], 0.09, 0.12, 0.04, 'sine'),
+    win: (c, t) => { arp(c, t, [523, 659, 784, 1047, 784, 1047], 0.08, 0.09, 0.045); blip(c, 1568, t + 0.5, 0.4, { vol: 0.04 }); },
+    lose: (c, t) => arp(c, t, [392, 349, 311, 262], 0.13, 0.14, 0.04, 'triangle'),
+    on: (c, t) => arp(c, t, [660, 990], 0.05, 0.05, 0.03)
+  };
+  function play(name, delay = 0) {
+    if (!on || !SND[name]) return;
+    if (name === 'step' || name === 'back') { const now = Date.now(); if (now - lastStep < 45) return; lastStep = now; }
+    const c = ac(); if (!c) return;
+    try { SND[name](c, c.currentTime + 0.01 + delay); } catch (e) {}
+  }
+  function sync() { const b = document.getElementById('snd'); if (!b) return; b.classList.toggle('off', !on); b.setAttribute('aria-label', on ? 'Sound on. Click to mute.' : 'Sound off. Click to turn on.'); b.title = on ? 'Mute sounds' : 'Turn sounds on'; }
+  function toggle() { on = !on; S.sound = on; save(); sync(); if (on) play('on'); }
+  return { play, toggle, sync };
+})();
 
 /* ---------- syntax highlight ---------- */
 const KW = new Set('public private static void class new return if else while for break continue final true false null'.split(' '));
@@ -109,17 +169,22 @@ function mountDebugger(host, code) {
     D.querySelector('[data-a=back]').disabled = D.querySelector('[data-a=reset]').disabled = i === 0;
     D.querySelector('[data-a=step]').disabled = D.querySelector('[data-a=end]').disabled = i === steps.length - 1;
   }
-  const go = n => { i = Math.max(0, Math.min(steps.length - 1, n)); show(); };
+  const go = (n, snd) => {
+    const was = i; i = Math.max(0, Math.min(steps.length - 1, n)); show();
+    if (!snd || i === was) return;
+    if (i === steps.length - 1) SFX.play(steps[i].err ? 'crash' : 'done', snd === 'ff' ? 0.12 : 0);
+    if (snd !== 'step' || i !== steps.length - 1) SFX.play(snd);
+  };
   D.addEventListener('click', e => {
     const b = e.target.closest('[data-a]'); if (!b) return;
     const a = b.dataset.a;
-    go(a === 'reset' ? 0 : a === 'back' ? i - 1 : a === 'step' ? i + 1 : steps.length - 1);
+    if (a === 'reset') go(0, 'rewind'); else if (a === 'back') go(i - 1, 'back'); else if (a === 'step') go(i + 1, 'step'); else go(steps.length - 1, 'ff');
   });
   rg.addEventListener('input', () => go(+rg.value));
   D.addEventListener('keydown', e => {
     if (e.target === rg) return;
-    if (e.key === 'ArrowRight') { go(i + 1); e.preventDefault(); }
-    if (e.key === 'ArrowLeft') { go(i - 1); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { go(i + 1, 'step'); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { go(i - 1, 'back'); e.preventDefault(); }
   });
   show();
 }
@@ -207,12 +272,13 @@ function viewLearn(id) {
   });
   $('#view').querySelectorAll('[data-run]').forEach(b => b.onclick = () => {
     const k = b.dataset.run, r = quickRun(t.cards[k].code);
+    SFX.play(r.bad ? (r.text.startsWith('Compile') ? 'compile' : 'crash') : 'run');
     $('#ro' + k).innerHTML = `<div class="con" style="padding:10px 0 0"><pre>${esc(r.text)}</pre></div>`;
   });
 }
 
 /* ---------- practice ---------- */
-let P = null;
+let P = null, streak = 0;
 let setup = { mode: 'all', unit: 0, topic: '' };
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function pool(cfg) { return QS.filter(q => (cfg.mode === 'all' || q.t === cfg.mode) && (!cfg.unit || byTopic(q.topic).unit === cfg.unit) && (!cfg.topic || q.topic === cfg.topic)); }
@@ -220,6 +286,7 @@ function startSession(cfg, list, title) {
   setup = cfg;
   let qs = list;
   if (!qs) { const pl = shuffle(pool(cfg)); pl.sort((a, b) => strength(a) - strength(b)); qs = pl.slice(0, cfg.topic ? 12 : 10); qs = shuffle(qs); }
+  streak = 0;
   P = { qs: qs.map(q => q.id), i: 0, res: [], answered: false, title: title || (cfg.topic ? cfg.topic + ' ' + byTopic(cfg.topic).title : cfg.mode === 'all' ? 'Mixed practice' : KIND[cfg.mode]), review: !!list };
   const target = P.review ? 'review' : 'practice';
   if (location.hash.slice(1) !== target) location.hash = target; else route();
@@ -282,6 +349,9 @@ function viewQuestion() {
 }
 function answer(q, ok) {
   P.answered = true; P.res.push(ok); grade(q.id, ok); renderTree(location.hash.slice(1));
+  streak = ok ? streak + 1 : 0;
+  SFX.play(ok ? 'right' : 'wrong');
+  if (ok && streak > 0 && streak % 3 === 0) SFX.play('streak', 0.22);
   const dot = document.querySelectorAll('.dots i')[P.res.length - 1]; if (dot) dot.className = ok ? 'ok' : 'bad';
   const more = q.t === 'bug' ? `<p>Line ${q.bug} should be: <code>${esc(q.fix.trim())}</code><br>The buggy version printed: <code>${esc(q.bugOut)}</code></p>` : '';
   const watch = q.t === 'trace' ? q.code : q.t === 'fill' ? q.code.replace('____', q.opts[0]) : q.t === 'bug' ? q.fixed : null;
@@ -293,7 +363,9 @@ function answer(q, ok) {
   $('#nx').focus({ preventScroll: true });
 }
 function viewDone() {
-  const right = P.res.filter(Boolean).length, missed = P.qs.map(id => QS.find(q => q.id === id)).filter((q, k) => !P.res[k]);
+  const right = P.res.filter(Boolean).length;
+  if (!P.played) { P.played = true; SFX.play(right / P.qs.length >= 0.7 ? 'win' : 'lose', 0.1); }
+  const missed = P.qs.map(id => QS.find(q => q.id === id)).filter((q, k) => !P.res[k]);
   $('#view').innerHTML = `<h1>${esc(P.title)}: done</h1>
     <div class="row" style="gap:18px;margin:10px 0 18px"><div class="score">${right}/${P.qs.length}</div><p style="margin:0;color:var(--muted);max-width:40ch">${right === P.qs.length ? 'Clean sweep.' : missed.length + ' went to your review pile. They come back until you get them right a few times in a row.'}</p></div>
     <div class="row"><button class="btn pri" id="again">${P.review ? 'Review more' : 'Another round'}</button><a class="btn" href="#review">Review pile (${dueList().length})</a><a class="btn" href="#home">Home</a></div>
@@ -358,20 +430,21 @@ function viewWrite(id) {
   ed.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); ed.setRangeText('    ', ed.selectionStart, ed.selectionEnd, 'end'); S.wd[p.id] = ed.value; save(); } });
   $('#wreset').onclick = () => { ed.value = starter; S.wd[p.id] = starter; save(); $('#wres').innerHTML = ''; };
   $('#whb').onclick = () => {
-    if (hintN < p.hints.length) hintN++;
+    if (hintN < p.hints.length) { hintN++; SFX.play('hint'); }
     $('#whb').textContent = `Hint (${hintN}/${p.hints.length})`;
     $('#whint').innerHTML = `<div class="trap" style="margin-top:14px">${p.hints.slice(0, hintN).map((h, k) => `<div><b>Hint ${k + 1}:</b>${esc(h)}</div>`).join('')}</div>`;
   };
   $('#wsb').onclick = () => {
     if (!solArmed) { solArmed = true; $('#wsb').textContent = 'Sure? Click again to show it'; return; }
     S.w[p.id] = Object.assign(S.w[p.id] || {}, { saw: true }); save(); renderTree(location.hash.slice(1));
+    SFX.play('reveal');
     $('#wsol').innerHTML = `<div class="fb" style="margin-top:16px"><h4>Reference solution</h4><p>${esc(p.explain)}</p>${codeHTML(p.solution)}<p style="margin-top:10px;color:var(--muted)">Now close it, wait a minute, and write it yourself from memory. Reading a solution is not the same as being able to write it.</p></div>`;
     $('#wsb').textContent = 'Solution shown';
   };
   let last = null;
   $('#wrun').onclick = () => {
     const code = ed.value;
-    if (code.trim() === starter.trim()) { $('#wres').innerHTML = '<div class="fb bad"><h4>Write your code first</h4><p>Put your code between the { and }. Stuck? Press Hint.</p></div>'; return; }
+    if (code.trim() === starter.trim()) { SFX.play('wrong'); $('#wres').innerHTML = '<div class="fb bad"><h4>Write your code first</h4><p>Put your code between the { and }. Stuck? Press Hint.</p></div>'; return; }
     S.w[p.id] = Object.assign(S.w[p.id] || {}, { tries: ((S.w[p.id] || {}).tries || 0) + 1 });
     const results = [];
     for (const call of p.tests) {
@@ -380,6 +453,7 @@ function viewWrite(id) {
         const L = r.compile.line, n = code.split('\n').length;
         const where = L && L >= 2 && L <= n + 1 ? 'line ' + (L - 1) + ' of your code' : 'your code';
         last = { compile: r.compile.msg };
+        SFX.play('compile');
         $('#wres').innerHTML = `<div class="fb bad"><h4>Compile error in ${where}</h4><p><code>${esc(r.compile.msg)}</code></p><p>Java will not run any of it until this is fixed. On the AP exam small syntax slips cost little, but here the tests cannot run.</p></div>`;
         save(); renderTree(location.hash.slice(1));
         return;
@@ -389,6 +463,7 @@ function viewWrite(id) {
     const pass = results.filter(r => r.got === r.exp).length, all = pass === results.length;
     last = { results, pass };
     if (all) S.w[p.id].solved = true;
+    SFX.play(all ? 'pass' : 'fail');
     save(); renderTree(location.hash.slice(1));
     $('#wres').innerHTML = `<div class="fb ${all ? 'ok' : 'bad'}"><h4>${all ? 'All ' + pass + ' tests pass' : pass + ' of ' + results.length + ' tests pass'}</h4>
       ${all ? `<p>${esc(p.explain)}</p>` : '<p>Pick a failing test and press Step through to watch your code run on it.</p>'}
@@ -421,6 +496,7 @@ ${allPass ? 'All tests pass. Say whether this would earn full credit on an AP fr
     try {
       const r = await sampleFn(promptText, { onText: ({ text }) => { out.textContent = text; }, modelTier: 'default' });
       out.textContent = r.text;
+      SFX.play('msg');
     } catch (e) {
       out.textContent = e && e.code === 'rate_limited' ? 'Too many reviews in a row. Wait a minute and try again.' : e && e.code === 'not_granted' ? 'Claude reviews are not available here.' : 'Could not get a review right now.';
       if (e && e.code === 'not_granted') btn.hidden = true;
@@ -441,7 +517,7 @@ function viewPlayground() {
   ed.addEventListener('input', () => { S.draft = ed.value; save(); });
   ed.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const s = ed.selectionStart; ed.setRangeText('    ', s, ed.selectionEnd, 'end'); S.draft = ed.value; save(); } });
   $('#pre').onchange = e => { if (e.target.value === '') return; ed.value = PRESETS[+e.target.value].code; S.draft = ed.value; save(); $('#pout').innerHTML = ''; };
-  $('#run').onclick = () => { const r = quickRun(ed.value); $('#pout').innerHTML = `<div class="con" style="padding:12px 0 0"><h5>Console output</h5><pre>${r.bad ? '' : esc(r.text)}${r.bad ? '<span class="er">' + esc(r.text) + '</span>' : ''}</pre></div>`; };
+  $('#run').onclick = () => { const r = quickRun(ed.value); SFX.play(r.bad ? (r.text.startsWith('Compile') ? 'compile' : 'crash') : 'run'); $('#pout').innerHTML = `<div class="con" style="padding:12px 0 0"><h5>Console output</h5><pre>${r.bad ? '' : esc(r.text)}${r.bad ? '<span class="er">' + esc(r.text) + '</span>' : ''}</pre></div>`; };
   $('#stp').onclick = () => mountDebugger($('#pout'), ed.value);
 }
 
@@ -465,6 +541,15 @@ function route() {
 }
 window.addEventListener('hashchange', () => { if (P && P.i >= P.qs.length && !location.hash.match(/practice|review/)) P = null; route(); });
 $('#menu').onclick = () => $('#app').classList.toggle('open');
+$('#snd').onclick = e => { e.stopPropagation(); SFX.toggle(); };
+SFX.sync();
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.tree a, .chip, .btn, .pr, .menu');
+  if (!b || b.disabled || b.id === 'snd') return;
+  if (['wrun', 'run', 'whb', 'wsb', 'wask'].includes(b.id) || b.dataset.run !== undefined) return;
+  SFX.play('tap');
+}, true);
+document.addEventListener('input', e => { if (e.target.classList && e.target.classList.contains('ed')) SFX.play('key'); });
 $('#scrim').onclick = () => $('#app').classList.remove('open');
 $('#tree').addEventListener('click', e => {
   const a = e.target.closest('a'); if (!a) return;

@@ -9,6 +9,7 @@ A study app for AP Computer Science A (Units 1 and 2), built as one HTML file. O
 - **Review pile**: missed questions come back right away, then after 1, 3, 7 and 14 days.
 - **Write code**: 29 free-response style problems. Write the method, run it against test cases, step through your own code on any failing test, get hints, or ask Claude to review it (Claude review works in the claude.ai version only).
 - **Playground**: write and step through your own code.
+- **Sound**: retro 8-bit and keyboard-click sound effects, synthesized in the browser (no audio files), with a mute button that remembers your choice.
 
 Progress is saved in your browser (localStorage), so it does not sync between devices.
 
