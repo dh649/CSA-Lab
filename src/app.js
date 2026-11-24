@@ -1,16 +1,16 @@
 {
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const TOPICS = DATA.topics, QS = DATA.questions, PRESETS = DATA.presets;
+const TOPICS = DATA.topics, QS = DATA.questions, PRESETS = DATA.presets, PROBS = DATA.problems;
 const byTopic = id => TOPICS.find(t => t.id === id);
 const NOTES = new Set(['1.3', '1.4', '1.5', '1.6', '1.9', '1.11', '1.12', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '2.9']);
 const UNITS = { 1: 'Unit 1: Using objects and methods', 2: 'Unit 2: Selection and iteration' };
 const KIND = { trace: 'Trace the code', bug: 'Bug hunt', fill: 'Fill the blank', mc: 'Concept check' };
-const VERSION = 'v1.0';
+const VERSION = 'v1.1';
 
 /* ---------- saved progress ---------- */
 const KEY = 'chronicle-csa-v1';
-let S = { q: {}, read: {}, draft: null };
+let S = { q: {}, read: {}, draft: null, w: {}, wd: {} };
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 const DAY = 864e5, GAPS = [1, 3, 7, 14];
@@ -27,6 +27,9 @@ const topicQs = id => QS.filter(q => q.topic === id);
 const topicPct = id => { const qs = topicQs(id); return qs.length ? qs.reduce((a, q) => a + strength(q), 0) / qs.length : 0; };
 const dueList = () => QS.filter(isDue);
 const solid = () => QS.filter(q => strength(q) >= 0.7).length;
+const solvedN = () => PROBS.filter(p => S.w[p.id] && S.w[p.id].solved).length;
+let sampleFn = null;
+try { if (window.claude && window.claude.use) window.claude.use('sample').then(f => { sampleFn = f; const b = document.getElementById('wask'); if (b && f) b.hidden = false; }).catch(() => {}); } catch (e) {}
 
 /* ---------- syntax highlight ---------- */
 const KW = new Set('public private static void class new return if else while for break continue final true false null'.split(' '));
@@ -140,10 +143,11 @@ function renderTree(route) {
   }
   h += '<h4>Practice</h4>';
   h += link('practice', 'Practice session');
+  h += link('write', 'Write code', `<span class="num">${solvedN()}/${PROBS.length}</span>`);
   h += link('review', 'Review pile', due ? `<span class="badge">${due}</span>` : '');
   h += link('playground', 'Playground');
   $('#tree').innerHTML = h;
-  $('#status').innerHTML = `<span class="hide-s">Units 1 and 2</span><span>${solid()}/${QS.length} solid</span><span>${due} due for review</span><span class="sp"></span><span class="hide-s">Answers verified with real Java</span><span>${VERSION}</span>`;
+  $('#status').innerHTML = `<span class="hide-s">Units 1 and 2</span><span>${solid()}/${QS.length} solid</span><span>${due} due for review</span><span class="hide-s">${solvedN()}/${PROBS.length} written</span><span class="sp"></span><span class="hide-s">Answers verified with real Java</span><span>${VERSION}</span>`;
 }
 
 /* ---------- views ---------- */
@@ -166,6 +170,7 @@ function viewHome() {
       </div>
       <div>
         ${due ? `<div class="next"><h3>${due} question${due === 1 ? '' : 's'} due for review</h3><p>Ones you missed come back until you get them right a few times in a row.</p><a class="btn pri" href="#review">Start review</a></div>` : ''}
+        <div class="next"><h3>Write code: ${solvedN()} of ${PROBS.length} solved</h3><p>Free response is 45% of the AP exam, and it is all writing methods like these.</p><a class="btn" href="#write">Open Write code</a></div>
         <div class="next"><h3>Next up: ${nt.id} ${esc(nt.title)}</h3><p>${S.read[nt.id] ? 'Your weakest topic right now.' : 'You have not opened this lesson yet.'} ${topicQs(nt.id).length} practice questions.</p><div class="row"><a class="btn ${due ? '' : 'pri'}" href="#${hid(nt.id)}">Open lesson</a><button class="btn" id="mixed">Mixed practice</button></div></div>
         ${prog}
       </div>
@@ -190,6 +195,7 @@ function viewLearn(id) {
     </section>`).join('')}
     <div class="row" style="border-top:1px solid var(--line);padding-top:24px">
       <button class="btn pri" id="prac">Practice ${t.id} (${n} questions)</button>
+      ${PROBS.filter(p => p.topic === id).map(p => `<a class="btn" href="#write-${p.id}">Write it: ${esc(p.title)}</a>`).join('')}
       ${nx ? `<a class="btn" href="#${hid(nx.id)}">Next: ${nx.id} ${esc(nx.title)}</a>` : ''}
     </div>`;
   $('#prac').onclick = () => startSession({ mode: 'all', unit: 0, topic: id });
@@ -303,6 +309,126 @@ function viewReview() {
   if (d.length) $('#rs').onclick = startReview;
 }
 
+
+/* ---------- write code ---------- */
+const wrapW = (code, call, kind) => 'public class Main {\n' + code.split('\n').map(l => '    ' + l).join('\n') + '\n    public static void main(String[] args) {\n        ' + (kind === 'print' ? call + ';' : 'System.out.println(' + call + ');') + '\n    }\n}';
+const normOut = t => t.split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '');
+const retType = p => p.sig.split('(')[0].trim().split(/\s+/).slice(-2)[0];
+const showVal = (p, v) => p.kind === 'return' && retType(p) === 'String' && !/^Crash: |^Compile error|^Runs forever/.test(v) ? JSON.stringify(v) : v;
+function runTest(p, code, call) {
+  const r = JavaEngine.run(wrapW(code, call, p.kind), { record: false, maxSteps: 60000 });
+  if (r.error && r.error.kind === 'compile') return { compile: r.error };
+  if (r.error && r.error.kind === 'Timeout') return { got: 'Runs forever', err: 'Your loop never stopped (stopped it after 60,000 steps).' };
+  const o = normOut(r.out);
+  if (r.error) return { got: (o ? o + '\n' : '') + 'Crash: ' + r.error.kind, err: r.error.kind + ': ' + r.error.msg };
+  return { got: o };
+}
+const wStatus = p => { const r = S.w[p.id]; return !r ? 'New' : r.solved ? 'Solved' : 'Tried'; };
+function viewWriteList() {
+  const byT = TOPICS.filter(t => PROBS.some(p => p.topic === t.id));
+  $('#view').innerHTML = `<h1>Write code</h1>
+    <p class="lede">On the AP exam, 4 free-response questions are 45% of your score, and every one of them is writing Java methods. Write each method below, run the tests, and step through your own code when a test fails. ${solvedN()} of ${PROBS.length} solved.</p>
+    ${byT.map(t => `<div class="prog" style="margin-bottom:16px"><h3>${t.id} ${esc(t.title)}</h3>${PROBS.filter(p => p.topic === t.id).map(p => { const st = wStatus(p); return `<a class="pr wr" href="#write-${p.id}"><span class="id">${p.kind === 'print' ? 'void' : esc(retType(p))}</span><span>${esc(p.title)}</span><span class="st st-${st.toLowerCase()}">${st}</span></a>`; }).join('')}</div>`).join('')}`;
+}
+function viewWrite(id) {
+  const p = PROBS.find(x => x.id === id); if (!p) return viewWriteList();
+  const t = byTopic(p.topic), idx = PROBS.indexOf(p), nx = PROBS[idx + 1];
+  const starter = p.sig + ' {\n    \n}';
+  const rec = S.w[p.id] || {};
+  let hintN = 0, solArmed = false;
+  $('#view').innerHTML = `<span class="src">Write it · ${t.id} ${esc(t.title)}${rec.solved ? ' · Solved' : ''}</span>
+    <h1>${esc(p.title)}</h1>
+    <p class="task" style="font-size:17px">${p.prompt}</p>
+    <h3>Examples</h3>
+    <div class="exs">${p.tests.slice(0, 2).map((c, k) => `<div class="exr"><code>${esc(c)}</code><span>${p.kind === 'print' ? 'prints' : 'returns'}</span><pre>${esc(showVal(p, p.expect[k])) || ' '}</pre></div>`).join('')}</div>
+    <h3 style="margin-top:18px">Your code</h3>
+    <textarea class="ed" id="wed" spellcheck="false" aria-label="Your method" style="min-height:240px">${esc(S.wd[p.id] || starter)}</textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn pri" id="wrun">Run tests</button>
+      <button class="btn" id="whb">Hint (0/${p.hints.length})</button>
+      <button class="btn" id="wask" hidden>Ask Claude to review</button>
+      <button class="btn" id="wsb">Show solution</button>
+      <button class="btn" id="wreset">Reset code</button>
+    </div>
+    <div id="whint"></div><div id="wres"></div><div id="wclaude"></div><div id="wsol"></div>
+    ${nx ? `<div class="row" style="border-top:1px solid var(--line);margin-top:28px;padding-top:20px"><a class="btn" href="#write-${nx.id}">Next: ${esc(nx.title)}</a><a class="btn" href="#write">All problems</a></div>` : ''}`;
+  const ed = $('#wed');
+  if (sampleFn) $('#wask').hidden = false;
+  ed.addEventListener('input', () => { S.wd[p.id] = ed.value; save(); });
+  ed.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); ed.setRangeText('    ', ed.selectionStart, ed.selectionEnd, 'end'); S.wd[p.id] = ed.value; save(); } });
+  $('#wreset').onclick = () => { ed.value = starter; S.wd[p.id] = starter; save(); $('#wres').innerHTML = ''; };
+  $('#whb').onclick = () => {
+    if (hintN < p.hints.length) hintN++;
+    $('#whb').textContent = `Hint (${hintN}/${p.hints.length})`;
+    $('#whint').innerHTML = `<div class="trap" style="margin-top:14px">${p.hints.slice(0, hintN).map((h, k) => `<div><b>Hint ${k + 1}:</b>${esc(h)}</div>`).join('')}</div>`;
+  };
+  $('#wsb').onclick = () => {
+    if (!solArmed) { solArmed = true; $('#wsb').textContent = 'Sure? Click again to show it'; return; }
+    S.w[p.id] = Object.assign(S.w[p.id] || {}, { saw: true }); save(); renderTree(location.hash.slice(1));
+    $('#wsol').innerHTML = `<div class="fb" style="margin-top:16px"><h4>Reference solution</h4><p>${esc(p.explain)}</p>${codeHTML(p.solution)}<p style="margin-top:10px;color:var(--muted)">Now close it, wait a minute, and write it yourself from memory. Reading a solution is not the same as being able to write it.</p></div>`;
+    $('#wsb').textContent = 'Solution shown';
+  };
+  let last = null;
+  $('#wrun').onclick = () => {
+    const code = ed.value;
+    if (code.trim() === starter.trim()) { $('#wres').innerHTML = '<div class="fb bad"><h4>Write your code first</h4><p>Put your code between the { and }. Stuck? Press Hint.</p></div>'; return; }
+    S.w[p.id] = Object.assign(S.w[p.id] || {}, { tries: ((S.w[p.id] || {}).tries || 0) + 1 });
+    const results = [];
+    for (const call of p.tests) {
+      const r = runTest(p, code, call);
+      if (r.compile) {
+        const L = r.compile.line, n = code.split('\n').length;
+        const where = L && L >= 2 && L <= n + 1 ? 'line ' + (L - 1) + ' of your code' : 'your code';
+        last = { compile: r.compile.msg };
+        $('#wres').innerHTML = `<div class="fb bad"><h4>Compile error in ${where}</h4><p><code>${esc(r.compile.msg)}</code></p><p>Java will not run any of it until this is fixed. On the AP exam small syntax slips cost little, but here the tests cannot run.</p></div>`;
+        save(); renderTree(location.hash.slice(1));
+        return;
+      }
+      results.push({ call, exp: p.expect[results.length], got: r.got, err: r.err });
+    }
+    const pass = results.filter(r => r.got === r.exp).length, all = pass === results.length;
+    last = { results, pass };
+    if (all) S.w[p.id].solved = true;
+    save(); renderTree(location.hash.slice(1));
+    $('#wres').innerHTML = `<div class="fb ${all ? 'ok' : 'bad'}"><h4>${all ? 'All ' + pass + ' tests pass' : pass + ' of ' + results.length + ' tests pass'}</h4>
+      ${all ? `<p>${esc(p.explain)}</p>` : '<p>Pick a failing test and press Step through to watch your code run on it.</p>'}
+      <div class="tests">${results.map((r, k) => { const ok = r.got === r.exp; return `<div class="tr ${ok ? 'tp' : 'tf'}"><span class="tm">${ok ? 'Pass' : 'Fail'}</span><code>${esc(r.call)}</code><div><span class="tl">expected</span><pre>${esc(showVal(p, r.exp)) || ' '}</pre></div><div><span class="tl">got</span><pre>${esc(showVal(p, r.got)) || ' '}</pre></div><button class="btn sm" data-st="${k}">Step through</button></div>`; }).join('')}</div>
+      ${all && !(S.w[p.id] || {}).saw ? '<details style="margin-top:12px"><summary>Compare with the reference solution</summary>' + codeHTML(p.solution) + '</details>' : ''}
+      <div id="wdbg"></div></div>`;
+    $('#wres').querySelectorAll('[data-st]').forEach(b => b.onclick = () => { mountDebugger($('#wdbg'), wrapW(code, results[+b.dataset.st].call, p.kind)); });
+  };
+  $('#wask').onclick = async () => {
+    if (!sampleFn) return;
+    const code = ed.value, box = $('#wclaude'), btn = $('#wask');
+    if (!last) $('#wrun').click();
+    const res = last && last.compile ? 'Compile error: ' + last.compile : last ? last.results.map(r => `${r.call}: expected ${showVal(p, r.exp) || '(nothing)'}, got ${showVal(p, r.got) || '(nothing)'} ${r.got === r.exp ? 'PASS' : 'FAIL'}`).join('\n') : 'not run';
+    const allPass = last && last.results && last.pass === last.results.length;
+    const promptText = `You are an AP Computer Science A tutor reviewing a high school student's Java method. Be direct and specific, like a good teacher. Plain text only, no markdown headings or bullet symbols, no em dashes, under 140 words.
+
+Problem: ${p.prompt.replace(/<[^>]+>/g, '')}
+Method header: ${p.sig}
+
+Student's code:
+${code}
+
+Automated test results:
+${res}
+
+${allPass ? 'All tests pass. Say whether this would earn full credit on an AP free-response question, and point out one habit worth keeping or one thing to clean up (naming, unneeded code, risky patterns). Do not rewrite their whole method.' : 'Some tests fail or it does not compile. Explain what their code actually does wrong, pointing to the specific line or expression, and connect it to the failing test. Give one hint toward the fix. Do NOT write the corrected code for them.'}`;
+    btn.disabled = true; btn.textContent = 'Claude is reading your code...';
+    box.innerHTML = '<div class="fb claude" style="margin-top:16px"><h4>Claude\'s review</h4><p class="ct"></p></div>';
+    const out = box.querySelector('.ct');
+    try {
+      const r = await sampleFn(promptText, { onText: ({ text }) => { out.textContent = text; }, modelTier: 'default' });
+      out.textContent = r.text;
+    } catch (e) {
+      out.textContent = e && e.code === 'rate_limited' ? 'Too many reviews in a row. Wait a minute and try again.' : e && e.code === 'not_granted' ? 'Claude reviews are not available here.' : 'Could not get a review right now.';
+      if (e && e.code === 'not_granted') btn.hidden = true;
+    }
+    btn.disabled = false; btn.textContent = 'Ask Claude to review';
+  };
+}
+
 /* ---------- playground ---------- */
 function viewPlayground() {
   const code = S.draft || PRESETS[0].code;
@@ -320,16 +446,18 @@ function viewPlayground() {
 }
 
 /* ---------- routing ---------- */
-const FILES = { home: 'Home.java', practice: 'Practice.java', review: 'ReviewPile.java', playground: 'Playground.java' };
+const FILES = { home: 'Home.java', practice: 'Practice.java', review: 'ReviewPile.java', playground: 'Playground.java', write: 'WriteCode.java' };
 function route() {
   const h = location.hash.slice(1) || 'home';
   renderTree(h);
-  if (h.startsWith('learn-')) { const id = h.slice(6).replace('-', '.'); const t = byTopic(id); $('#tab').textContent = t ? t.file : 'Home.java'; viewLearn(id); }
+  if (h.startsWith('write-')) { const p = PROBS.find(x => x.id === h.slice(6)); $('#tab').textContent = p ? p.sig.split('(')[0].trim().split(/\s+/).pop() + '.java' : 'WriteCode.java'; renderTree('write'); viewWrite(h.slice(6)); }
+  else if (h.startsWith('learn-')) { const id = h.slice(6).replace('-', '.'); const t = byTopic(id); $('#tab').textContent = t ? t.file : 'Home.java'; viewLearn(id); }
   else {
     $('#tab').textContent = FILES[h] || 'Home.java';
     if (h === 'practice') { if (P && !P.review) viewQuestion(); else viewPracticeSetup(); }
     else if (h === 'review') viewReview();
     else if (h === 'playground') viewPlayground();
+    else if (h === 'write') viewWriteList();
     else viewHome();
   }
   $('#app').classList.remove('open');

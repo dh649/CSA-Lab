@@ -149,8 +149,27 @@ h3{font-size:18px;margin:0 0 6px}
 textarea.ed{width:100%;min-height:300px;font-family:var(--mono);font-size:16px;line-height:1.55;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);tab-size:4;resize:vertical}
 select{font:inherit;font-size:16px;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 10px}
 .scrim{display:none}
+.exs{display:grid;gap:6px;margin-bottom:6px}
+.exr{display:grid;grid-template-columns:minmax(0,auto) auto minmax(0,1fr);gap:12px;align-items:start;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--panel)}
+.exr span{color:var(--muted);font-size:14px}
+.exr pre,.tr pre,pre.ex{margin:0;font-family:var(--mono);font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+pre.ex{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin-top:8px}
+.tests{display:grid;gap:8px;margin-top:10px}
+.tr{display:grid;grid-template-columns:44px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:start;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.tr .tm{font-weight:700;font-size:13px}
+.tr.tp .tm{color:var(--ok)}.tr.tf .tm{color:var(--bad)}
+.tr.tf{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.tl{display:block;font-size:12px;color:var(--muted)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13.5px}
+.st{font-size:13px;font-weight:600;text-align:right}
+.st-solved{color:var(--ok)}.st-tried{color:var(--curmark)}.st-new{color:var(--muted)}
+.pr.wr{grid-template-columns:4.2em minmax(0,1fr) 72px}
+.fb.claude{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.fb.claude .ct{white-space:pre-wrap;margin:0}
+details summary{cursor:pointer;font-weight:600;min-height:32px}
 @media(max-width:900px){.home{grid-template-columns:minmax(0,1fr)}.dbg-body{grid-template-columns:minmax(0,1fr)}.dbg-body .code{border-right:0;border-bottom:1px solid var(--line);max-height:340px}}
 @media(max-width:760px){
+.tr{grid-template-columns:44px minmax(0,1fr)}.tr>div,.tr>button{grid-column:2}.exr{grid-template-columns:minmax(0,1fr)}
 .app{grid-template-columns:minmax(0,1fr)}
 .side{position:fixed;z-index:20;top:0;bottom:0;left:0;width:min(300px,86vw);transform:translateX(-100%);transition:transform .2s}
 .app.open .side{transform:none}

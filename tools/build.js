@@ -2,6 +2,8 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const ROOT = require('path').resolve(__dirname, '..');
 const E = require(ROOT + '/src/engine.js');
 const { TOPICS, QUESTIONS, PRESETS } = require(ROOT + '/src/content.js');
+const { PROBLEMS } = require(ROOT + '/src/problems.js');
+const wrapW = (code, call, kind) => 'public class Main {\n' + code + '\n    public static void main(String[] args) {\n        ' + (kind === 'print' ? call + ';' : 'System.out.println(' + call + ');') + '\n    }\n}';
 const JD = ROOT + '/build/java';
 fs.rmSync(JD, { recursive: true, force: true }); fs.mkdirSync(JD, { recursive: true });
 
@@ -45,6 +47,11 @@ QUESTIONS.forEach((q, i) => {
 });
 TOPICS.forEach((t, ti) => t.cards.forEach((c, ci) => { if (c.code) add('L' + ti + '_' + ci, c.code); }));
 PRESETS.forEach((p, i) => add('P' + i, p.code));
+PROBLEMS.forEach((pb, i) => pb.tests.forEach((t, k) => {
+  add('W' + i + '_s_' + k, wrapW(pb.solution, t, pb.kind));
+  pb.wrong.forEach((w, j) => add('W' + i + '_w' + j + '_' + k, wrapW(w, t, pb.kind)));
+  add('W' + i + '_z_' + k, wrapW(pb.sig + ' {\n}', t, pb.kind));
+}));
 
 cp.execSync(`java -cp ${ROOT}/tools Harness ${JD} ${ROOT}/build/results.jsonl 2>/dev/null`, { stdio: 'inherit' });
 const res = {};
@@ -85,8 +92,18 @@ QUESTIONS.forEach((q, i) => {
     q.oks.forEach((o, k) => { if (res['M' + i + '_o' + k].status === 'compile') problems.push(q.id + ' mc: ok snippet ' + k + ' did not compile: ' + res['M' + i + '_o' + k].err); });
   }
 });
+PROBLEMS.forEach((pb, i) => {
+  if (!pb.solution.startsWith(pb.sig)) problems.push(pb.id + ': solution does not start with sig');
+  pb.expect = pb.tests.map((t, k) => label(res['W' + i + '_s_' + k]).replace(/^\(nothing printed\)$/, ''));
+  pb.expect.forEach((e, k) => { if (/^Crash|^Compile|^Runs/.test(e)) problems.push(pb.id + ' test ' + k + ': solution gives ' + e); });
+  pb.wrong.forEach((w, j) => {
+    const fails = pb.tests.filter((t, k) => label(res['W' + i + '_w' + j + '_' + k]).replace(/^\(nothing printed\)$/, '') !== pb.expect[k]).length;
+    if (!fails) problems.push(pb.id + ': wrong solution ' + j + ' passes every test');
+  });
+});
+console.log('problems:', PROBLEMS.length, 'tests:', PROBLEMS.reduce((a, p) => a + p.tests.length, 0));
 console.log('programs:', Object.keys(progs).length, 'questions:', QUESTIONS.length);
 console.log('PROBLEMS:', problems.length); problems.forEach(p => console.log('  ' + p));
 console.log('ENGINE MISMATCHES:', mismatches.length); mismatches.forEach(m => console.log('  ' + JSON.stringify(m)));
-const data = { topics: TOPICS, questions: QUESTIONS.map(q => { const o = { ...q }; delete o.verify; delete o.vout; delete o.fails; delete o.oks; return o; }), presets: PRESETS };
+const data = { problems: PROBLEMS.map(p => ({ id: p.id, topic: p.topic, title: p.title, kind: p.kind, prompt: p.prompt, sig: p.sig, tests: p.tests, expect: p.expect, hints: p.hints, solution: p.solution, explain: p.explain })), topics: TOPICS, questions: QUESTIONS.map(q => { const o = { ...q }; delete o.verify; delete o.vout; delete o.fails; delete o.oks; return o; }), presets: PRESETS };
 fs.writeFileSync(ROOT + '/build/data.json', JSON.stringify(data));
