@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSA Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday study tool, calm and exact
+   IDEA an IDE with its debugger open: explorer of lesson files, editor tabs, status bar
+   PICTURE the step-through debugger itself: code with the running line lit, variable boxes, console
+   COLOUR white editor / warm grey chrome; cobalt accent, IDE syntax colours; night: graphite #14161b
+   TYPE IBM Plex Sans for UI and lessons, JetBrains Mono for code only
+   LAYOUT laptop: explorer 270px left, editor area right, status bar; phone: top bar + drawer, one column */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#16181d);--chrome:light-dark(#f3f2ee,#0f1115);--panel:light-dark(#f8f8f6,#1c1f26);--ink:light-dark(#17191e,#e7e9ee);--muted:light-dark(#5b616c,#9aa1ad);--line:light-dark(#e1e0da,#2a2e37);
+--accent:light-dark(#2346e8,#8098ff);--accent-ink:light-dark(#ffffff,#0f1115);--accent-soft:light-dark(#e9edff,#232a48);
+--ok:light-dark(#0b7a3b,#56c98a);--ok-soft:light-dark(#e3f5ea,#183326);--bad:light-dark(#c4251b,#ff7a6e);--bad-soft:light-dark(#fdeceb,#3a1d1c);
+--kw:light-dark(#0033b3,#cf8e6d);--str:light-dark(#067d17,#6aab73);--num:light-dark(#1750eb,#2aacb8);--com:light-dark(#8c8c8c,#7a7e85);--fn:light-dark(#00627a,#56a8f5);--ty:light-dark(#871094,#c77dbb);
+--cur:light-dark(#fff3bf,#3b3417);--curmark:light-dark(#e8a400,#f2c14e);--chg:light-dark(#fff0a8,#4d4318);
+--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);overflow:hidden}
+button{font:inherit;color:inherit}
+code,.mono{font-family:var(--mono);font-size:.9em}
+p code,li code,.note code{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 4px;overflow-wrap:anywhere}
+.app{display:grid;grid-template-columns:270px minmax(0,1fr);grid-template-rows:44px minmax(0,1fr) 28px;height:100%}
+.side{grid-row:1/3;background:var(--chrome);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.brand{height:44px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line);font-weight:700;letter-spacing:-.01em}
+.brand svg{flex:none}
+.tree{overflow-y:auto;padding:8px 0 24px;flex:1}
+.tree h4{margin:14px 16px 4px;font-size:13px;font-weight:600;color:var(--muted)}
+.tree a{display:flex;align-items:center;gap:8px;min-height:34px;padding:4px 14px 4px 16px;color:var(--ink);text-decoration:none;font-size:14px;border-left:3px solid transparent}
+.tree a:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.tree a.on{background:var(--accent-soft);border-left-color:var(--accent);font-weight:600}
+.tree a.file{padding-left:34px;font-family:var(--mono);font-size:13px}
+.tree a .num{color:var(--muted);font-size:12px;margin-left:auto;font-family:var(--mono)}
+.tree .folder{display:flex;align-items:center;gap:8px;padding:6px 16px;font-size:14px;font-weight:600}
+.ring{flex:none}
+.badge{margin-left:auto;background:var(--bad);color:#fff;border-radius:10px;font-size:12px;padding:0 7px;font-weight:600}
+.top{display:flex;align-items:stretch;border-bottom:1px solid var(--line);background:var(--chrome)}
+.menu{display:none;border:0;background:none;width:48px;cursor:pointer}
+.tab{display:flex;align-items:center;gap:8px;padding:0 18px;background:var(--bg);border-right:1px solid var(--line);font-family:var(--mono);font-size:13px;position:relative}
+.tab::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent)}
+.top .sp{flex:1}
+.main{overflow-y:auto;overflow-x:hidden}
+.wrap{max-width:1120px;padding:28px max(4vw,16px) 64px}
+.status{grid-column:1/3;display:flex;align-items:center;gap:18px;padding:0 14px;background:var(--accent);color:var(--accent-ink);font-size:12.5px;white-space:nowrap;overflow:hidden}
+.status span{flex:none}.status .sp{flex:1}
+h1{font-size:clamp(30px,4vw,42px);line-height:1.05;letter-spacing:-.02em;margin:0 0 8px;text-wrap:balance}
+h2{font-size:22px;line-height:1.2;margin:0 0 10px;letter-spacing:-.01em}
+h3{font-size:18px;margin:0 0 6px}
+.lede{color:var(--muted);margin:0 0 22px;max-width:62ch}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;font-size:15px;text-decoration:none;color:var(--ink)}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:focus-visible,.opt:focus-visible,.tree a:focus-visible,.ln:focus-visible,.chip:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+/* code + debugger */
+.code{font-family:var(--mono);font-size:14px;line-height:1.6;background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:auto;padding:8px 0}
+.ln{display:grid;grid-template-columns:44px minmax(max-content,1fr);white-space:pre;border:0;background:none;width:100%;text-align:left;padding:0;font:inherit;cursor:default}
+.ln .g{color:var(--muted);text-align:right;padding-right:14px;user-select:none;font-size:12.5px;position:relative}
+.ln .t{padding-right:16px}
+.ln.cur{background:var(--cur)}
+.ln.cur .g::before{content:"";position:absolute;left:6px;top:50%;margin-top:-5px;border:5px solid transparent;border-left:7px solid var(--curmark)}
+.ln.errl{background:var(--bad-soft)}
+.ln.pick{cursor:pointer}
+.ln.pick:hover{background:var(--accent-soft)}
+.ln.right{background:var(--ok-soft)}
+.ln.wrong{background:var(--bad-soft)}
+.k{color:var(--kw);font-weight:500}.s{color:var(--str)}.n{color:var(--num)}.c{color:var(--com);font-style:italic}.f{color:var(--fn)}.ty{color:var(--ty)}
+.blank{background:var(--accent-soft);border:1.5px dashed var(--accent);border-radius:4px;padding:0 10px;color:var(--accent);font-weight:700}
+.dbg{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;margin-top:12px}
+.dbg-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--chrome)}
+.ib{width:44px;height:40px;border-radius:7px;border:1px solid var(--line);background:var(--bg);cursor:pointer;display:grid;place-items:center}
+.ib:hover{border-color:var(--accent)}
+.ib.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);width:auto;padding:0 14px;gap:6px;display:flex;font-weight:600;font-size:14px}
+.ib:disabled{opacity:.4;cursor:default}
+.stepn{font-size:13px;color:var(--muted);font-family:var(--mono);margin-left:6px;white-space:nowrap}
+.dbg input[type=range]{flex:1 1 120px;accent-color:var(--accent);min-height:30px}
+.dbg-body{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+.dbg-body>div:first-child{display:flex;flex-direction:column}.dbg-body .code{border:0;border-radius:0;border-right:1px solid var(--line);max-height:460px;flex:1}
+.dbg-side{display:flex;flex-direction:column}
+.note{padding:12px 14px;border-bottom:1px solid var(--line);font-size:14.5px;min-height:64px;background:var(--bg)}
+.note b{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:2px}
+.note.err{background:var(--bad-soft);color:var(--bad)}
+.vars{padding:10px 14px;border-bottom:1px solid var(--line);flex:1}
+.vars h5,.con h5{margin:0 0 6px;font-size:12.5px;color:var(--muted);font-weight:600}
+.frame{margin-bottom:10px}
+.frame .fn{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.frame.live .fn{color:var(--accent);font-weight:700}
+.box{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:baseline;font-family:var(--mono);font-size:13.5px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:4px;background:var(--bg)}
+.box .vt{color:var(--ty);font-size:12px}
+.box .vv{text-align:right;font-weight:700;overflow-wrap:anywhere}
+.box.chg{background:var(--chg);transition:background .4s}
+.empty{color:var(--muted);font-size:13px}
+.con{padding:10px 14px}
+.con pre{margin:0;font-family:var(--mono);font-size:13.5px;background:#111317;color:#e8e8e8;border-radius:6px;padding:10px 12px;min-height:44px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto}
+.con pre .er{color:#ff8a80}
+/* lessons */
+.card{border-top:1px solid var(--line);padding:26px 0}
+.card p{max-width:70ch;margin:0 0 12px}
+.trap{border:1px solid color-mix(in srgb,var(--curmark) 60%,var(--line));background:color-mix(in srgb,var(--cur) 55%,var(--bg));border-radius:8px;padding:10px 14px;margin:0 0 12px;max-width:70ch;font-size:15px}
+.trap b{margin-right:6px}
+.codehead{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.src{font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:2px 10px;margin-bottom:16px}
+/* home */
+.home{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:28px;align-items:start}
+.prog{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.prog h3{padding:12px 14px;margin:0;font-size:15px;background:var(--chrome);border-bottom:1px solid var(--line)}
+.pr{display:grid;grid-template-columns:3.2em minmax(0,1fr) 72px;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:14px;min-height:44px}
+.pr:hover{background:var(--accent-soft)}
+.pr .id{font-family:var(--mono);color:var(--muted);font-size:13px}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:4px}
+.next{border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px;background:var(--panel)}
+.next p{margin:0 0 12px;color:var(--muted);font-size:15px}
+/* practice */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:14px;font-weight:500}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.qhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;font-size:14px;color:var(--muted)}
+.kind{font-weight:700;color:var(--accent);font-size:14px}
+.dots{display:flex;gap:4px;margin-left:auto}
+.dots i{width:18px;height:6px;border-radius:3px;background:var(--line)}
+.dots i.ok{background:var(--ok)}.dots i.bad{background:var(--bad)}.dots i.now{background:var(--accent)}
+.prompt{font-size:20px;font-weight:600;margin:0 0 12px;line-height:1.3}
+.task{margin:0 0 12px;max-width:70ch}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+.opt{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;text-align:left;border:1.5px solid var(--line);background:var(--bg);border-radius:9px;padding:12px;cursor:pointer;min-height:56px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .L{font-weight:700;color:var(--muted);font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:5px;text-align:center;line-height:22px}
+.opt pre{margin:0;font-family:var(--mono);font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.opt .crash{color:var(--bad);font-weight:700}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+.fb{margin-top:16px;border-radius:10px;padding:14px 16px;border:1px solid var(--line)}
+.fb.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.fb.bad{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+.fb h4{margin:0 0 4px;font-size:16px}
+.fb p{margin:0 0 10px;max-width:70ch}
+.score{font-size:clamp(48px,8vw,72px);font-weight:700;line-height:1;letter-spacing:-.03em}
+.miss{border-top:1px solid var(--line);padding:12px 0}
+textarea.ed{width:100%;min-height:300px;font-family:var(--mono);font-size:16px;line-height:1.55;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);tab-size:4;resize:vertical}
+select{font:inherit;font-size:16px;min-height:44px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 10px}
+.scrim{display:none}
+@media(max-width:900px){.home{grid-template-columns:minmax(0,1fr)}.dbg-body{grid-template-columns:minmax(0,1fr)}.dbg-body .code{border-right:0;border-bottom:1px solid var(--line);max-height:340px}}
+@media(max-width:760px){
+.app{grid-template-columns:minmax(0,1fr)}
+.side{position:fixed;z-index:20;top:0;bottom:0;left:0;width:min(300px,86vw);transform:translateX(-100%);transition:transform .2s}
+.app.open .side{transform:none}
+.app.open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:15}
+.menu{display:grid;place-items:center}
+.status{grid-column:1}
+.opts{grid-template-columns:minmax(0,1fr)}
+.wrap{padding-top:20px}
+.status .hide-s{display:none}
+}
+@media(prefers-reduced-motion:reduce){.side{transition:none}.box.chg{transition:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="5" fill="var(--accent)"/><path d="M8 6 L4.5 11 L8 16 M14 6 L17.5 11 L14 16" stroke="var(--accent-ink)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      CSA Lab
+    </div>
+    <nav class="tree" id="tree"></nav>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <header class="top">
+    <button class="menu" id="menu" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <div class="tab" id="tab">Home.java</div>
+    <div class="sp"></div>
+  </header>
+  <main class="main" id="main"><div class="wrap" id="view"></div></main>
+  <footer class="status" id="status"></footer>
+</div>
+<script>
+// Mini Java interpreter for AP CSA Units 1-2: primitives, Strings, Math, if/loops, static methods.
+// Produces a step-by-step trace for the debugger view.
+const JavaEngine = (() => {
+  class JErr extends Error { constructor(kind, msg, line) { super(msg); this.kind = kind; this.line = line; } }
+  const compile = (msg, line) => new JErr('compile', msg, line);
+  const thrown = (name, msg, line) => new JErr(name, msg, line);
+
+  const OPS = ['++', '--', '+=', '-=', '*=', '/=', '%=', '==', '!=', '<=', '>=', '&&', '||', '+', '-', '*', '/', '%', '<', '>', '=', '!', '(', ')', '{', '}', '[', ']', ';', ',', '.', '?', ':'];
+  const TYPES = new Set(['int', 'double', 'boolean', 'String']);
+
+  function lex(src) {
+    const toks = []; let i = 0, line = 1; const n = src.length;
+    while (i < n) {
+      const c = src[i];
+      if (c === '\n') { line++; i++; continue; }
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === '/' && src[i + 1] === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+      if (c === '/' && src[i + 1] === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) { if (src[i] === '\n') line++; i++; } i += 2; continue; }
+      if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1] || ''))) {
+        let j = i, isD = false;
+        while (j < n && /[0-9]/.test(src[j])) j++;
+        if (src[j] === '.' && /[0-9]/.test(src[j + 1] || '')) { isD = true; j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+        else if (src[j] === '.' && !/[A-Za-z_]/.test(src[j + 1] || '')) { isD = true; j++; }
+        if (src[j] === 'e' || src[j] === 'E') { isD = true; j++; if (src[j] === '+' || src[j] === '-') j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+        const txt = src.slice(i, j);
+        if (src[j] === 'd' || src[j] === 'D') { isD = true; j++; }
+        toks.push({ k: isD ? 'dbl' : 'int', v: txt, line, s: i, e: j }); i = j; continue;
+      }
+      if (c === '"') {
+        let j = i + 1, s = '';
+        while (j < n && src[j] !== '"') {
+          if (src[j] === '\n') throw compile('unclosed string literal', line);
+          if (src[j] === '\\') {
+            const e = src[j + 1];
+            const map = { n: '\n', t: '\t', '"': '"', '\\': '\\', "'": "'" };
+            if (!(e in map)) throw compile('illegal escape character in string: \\' + e, line);
+            s += map[e]; j += 2; continue;
+          }
+          s += src[j]; j++;
+        }
+        if (j >= n) throw compile('unclosed string literal', line);
+        toks.push({ k: 'str', v: s, line, s: i, e: j + 1 }); i = j + 1; continue;
+      }
+      if (c === "'") throw compile('char values are not supported in this playground; use a String instead', line);
+      if (/[A-Za-z_$]/.test(c)) {
+        let j = i; while (j < n && /[A-Za-z0-9_$]/.test(src[j])) j++;
+        toks.push({ k: 'id', v: src.slice(i, j), line, s: i, e: j }); i = j; continue;
+      }
+      const op = OPS.find(o => src.startsWith(o, i));
+      if (!op) throw compile("illegal character: '" + c + "'", line);
+      toks.push({ k: 'op', v: op, line, s: i, e: i + op.length }); i += op.length;
+    }
+    toks.push({ k: 'eof', v: '<end of file>', line, s: n, e: n });
+    return toks;
+  }
+
+  function parse(src) {
+    const toks = lex(src); let p = 0;
+    const peek = (o = 0) => toks[Math.min(p + o, toks.length - 1)];
+    const next = () => toks[p++];
+    const is = (v, o = 0) => { const t = peek(o); return (t.k === 'op' || t.k === 'id') && t.v === v; };
+    const expect = v => { const t = next(); if (!((t.k === 'op' || t.k === 'id') && t.v === v)) throw compile("'" + v + "' expected but found '" + t.v + "'", t.line); return t; };
+    const ident = () => { const t = next(); if (t.k !== 'id' || TYPES.has(t.v) || ['if', 'else', 'while', 'for', 'return', 'new', 'true', 'false', 'null'].includes(t.v)) throw compile('<identifier> expected but found \'' + t.v + "'", t.line); return t; };
+    const textOf = (a, b) => src.slice(toks[a].s, toks[b - 1].e);
+
+    function parseType() {
+      const t = next();
+      if (!TYPES.has(t.v) && t.v !== 'void') throw compile("unknown type '" + t.v + "'", t.line);
+      let ty = t.v;
+      if (is('[')) { expect('['); expect(']'); ty += '[]'; }
+      return ty;
+    }
+
+    // ----- expressions -----
+    function expr() { return assign(); }
+    function assign() {
+      const start = p;
+      const lhs = ternary();
+      if (peek().k === 'op' && ['=', '+=', '-=', '*=', '/=', '%='].includes(peek().v)) {
+        const opTok = next();
+        if (lhs.k !== 'var') throw compile('unexpected type: required variable, found value', opTok.line);
+        const rhs = assign();
+        return { k: 'assign', op: opTok.v, name: lhs.name, rhs, line: opTok.line, src: textOf(start, p) };
+      }
+      return lhs;
+    }
+    function ternary() {
+      const start = p;
+      const c = or();
+      if (is('?')) { next(); const a = ternary(); expect(':'); const b = ternary(); return { k: 'cond', c, a, b, line: c.line, src: textOf(start, p) }; }
+      return c;
+    }
+    function binLevel(sub, ops) {
+      return function lvl() {
+        const start = p;
+        let l = sub();
+        while (peek().k === 'op' && ops.includes(peek().v)) {
+          const o = next(); const r = sub();
+          if (o.v === '+' && l.k === 'lit' && r.k === 'lit' && l.val.t === 'String' && r.val.t === 'String') {
+            l = { k: 'lit', val: { t: 'String', v: l.val.v + r.val.v, lit: true }, line: l.line, src: textOf(start, p) };
+            continue;
+          }
+          l = { k: 'bin', op: o.v, l, r, line: o.line, src: textOf(start, p) };
+        }
+        return l;
+      };
+    }
+    const mul = binLevel(unary, ['*', '/', '%']);
+    const add = binLevel(mul, ['+', '-']);
+    const rel = binLevel(add, ['<', '>', '<=', '>=']);
+    const eq = binLevel(rel, ['==', '!=']);
+    const and = binLevel(eq, ['&&']);
+    const or = binLevel(and, ['||']);
+
+    function unary() {
+      const start = p; const t = peek();
+      if (t.k === 'op' && (t.v === '!' || t.v === '-' || t.v === '+')) { next(); const e = unary(); return { k: 'un', op: t.v, e, line: t.line, src: textOf(start, p) }; }
+      if (t.k === 'op' && (t.v === '++' || t.v === '--')) { next(); const e = unary(); if (e.k !== 'var') throw compile('unexpected type: required variable', t.line); return { k: 'inc', op: t.v, pre: true, name: e.name, line: t.line, src: textOf(start, p) }; }
+      if (t.k === 'op' && t.v === '(' && peek(1).k === 'id' && TYPES.has(peek(1).v) && is(')', 2)) {
+        next(); const ty = next().v; next(); const e = unary();
+        return { k: 'cast', ty, e, line: t.line, src: textOf(start, p) };
+      }
+      return postfix();
+    }
+    function args() {
+      expect('('); const a = [];
+      if (!is(')')) { a.push(expr()); while (is(',')) { next(); a.push(expr()); } }
+      expect(')'); return a;
+    }
+    function postfix() {
+      const start = p;
+      let e = primary();
+      for (;;) {
+        if (is('.')) {
+          next(); const m = ident();
+          if (!is('(')) throw compile("cannot find symbol: variable " + m.v, m.line);
+          const a = args();
+          e = { k: 'mcall', obj: e, name: m.v, args: a, line: m.line, src: textOf(start, p) };
+        } else if (peek().k === 'op' && (peek().v === '++' || peek().v === '--')) {
+          const o = next();
+          if (e.k !== 'var') throw compile('unexpected type: required variable', o.line);
+          e = { k: 'inc', op: o.v, pre: false, name: e.name, line: o.line, src: textOf(start, p) };
+        } else break;
+      }
+      return e;
+    }
+    function primary() {
+      const start = p; const t = next();
+      if (t.k === 'int') {
+        const v = Number(t.v);
+        if (v > 2147483648) throw compile('integer number too large: ' + t.v, t.line);
+        return { k: 'lit', val: { t: 'int', v: v > 2147483647 ? -2147483648 : v }, line: t.line, src: t.v };
+      }
+      if (t.k === 'dbl') return { k: 'lit', val: { t: 'double', v: Number(t.v) }, line: t.line, src: t.v };
+      if (t.k === 'str') return { k: 'lit', val: { t: 'String', v: t.v, lit: true }, line: t.line, src: textOf(start, p) };
+      if (t.k === 'op' && t.v === '(') { const e = expr(); expect(')'); return { ...e, paren: true, src: textOf(start, p) }; }
+      if (t.k === 'id') {
+        if (t.v === 'true' || t.v === 'false') return { k: 'lit', val: { t: 'boolean', v: t.v === 'true' }, line: t.line, src: t.v };
+        if (t.v === 'null') return { k: 'lit', val: { t: 'null' }, line: t.line, src: 'null' };
+        if (t.v === 'new') {
+          const c = next();
+          if (c.v !== 'String') throw compile('only new String(...) is supported in this playground', c.line);
+          const a = args();
+          return { k: 'newstr', args: a, line: t.line, src: textOf(start, p) };
+        }
+        if (t.v === 'Math' && is('.')) { next(); const f = ident(); const a = args(); return { k: 'math', fn: f.v, args: a, line: t.line, src: textOf(start, p) }; }
+        if (t.v === 'Integer' && is('.')) { next(); const f = ident(); if (f.v === 'MAX_VALUE') return { k: 'lit', val: { t: 'int', v: 2147483647 }, line: t.line, src: 'Integer.MAX_VALUE' }; if (f.v === 'MIN_VALUE') return { k: 'lit', val: { t: 'int', v: -2147483648 }, line: t.line, src: 'Integer.MIN_VALUE' }; throw compile('cannot find symbol: Integer.' + f.v, f.line); }
+        if (t.v === 'System' && is('.')) {
+          next(); const o = ident(); if (o.v !== 'out') throw compile('cannot find symbol: System.' + o.v, o.line);
+          expect('.'); const f = ident();
+          if (!['println', 'print', 'printf'].includes(f.v)) throw compile('cannot find symbol: System.out.' + f.v, f.line);
+          const a = args();
+          return { k: 'print', fn: f.v, args: a, line: t.line, src: textOf(start, p) };
+        }
+        if (TYPES.has(t.v)) throw compile("'.class' expected", t.line);
+        if (is('(')) { const a = args(); return { k: 'call', name: t.v, args: a, line: t.line, src: textOf(start, p) }; }
+        return { k: 'var', name: t.v, line: t.line, src: t.v };
+      }
+      throw compile("illegal start of expression: '" + t.v + "'", t.line);
+    }
+
+    // ----- statements -----
+    function isDeclStart() {
+      let o = 0; if (is('final')) o = 1;
+      const t = peek(o);
+      return t.k === 'id' && TYPES.has(t.v) && (peek(o + 1).k === 'id' || is('[', o + 1));
+    }
+    function decl(needSemi) {
+      const start = p; const line = peek().line;
+      if (is('final')) next();
+      const ty = parseType();
+      const vars = [];
+      do {
+        if (vars.length) next();
+        const nm = ident(); let init = null;
+        if (is('=')) { next(); init = expr(); }
+        vars.push({ name: nm.v, init });
+      } while (is(','));
+      if (needSemi) expect(';');
+      return { k: 'decl', ty, vars, line, src: textOf(start, p) };
+    }
+    function exprStmtList() {
+      const list = [exprStmtCheck(expr())];
+      while (is(',')) { next(); list.push(exprStmtCheck(expr())); }
+      return list;
+    }
+    function exprStmtCheck(e) {
+      if (!['assign', 'inc', 'call', 'mcall', 'print', 'math', 'newstr'].includes(e.k) || e.paren) throw compile('not a statement', e.line);
+      return e;
+    }
+    function block() {
+      const line = expect('{').line; const body = [];
+      while (!is('}')) { if (peek().k === 'eof') throw compile("reached end of file while parsing (missing '}')", peek().line); body.push(stmt()); }
+      expect('}');
+      return { k: 'block', body, line };
+    }
+    function stmt() {
+      const t = peek();
+      if (is('{')) return block();
+      if (is(';')) { next(); return { k: 'empty', line: t.line }; }
+      if (isDeclStart()) return decl(true);
+      if (is('if')) {
+        next(); expect('('); const s0 = p; const c = expr(); const csrc = textOf(s0, p); expect(')');
+        if (is(';')) { /* if (x); is legal but almost always a bug */ }
+        const a = stmt(); let b = null;
+        if (is('else')) { next(); b = stmt(); }
+        return { k: 'if', c, csrc, a, b, line: t.line };
+      }
+      if (is('while')) {
+        next(); expect('('); const s0 = p; const c = expr(); const csrc = textOf(s0, p); expect(')');
+        return { k: 'while', c, csrc, body: stmt(), line: t.line };
+      }
+      if (is('for')) {
+        next(); expect('(');
+        let init = null;
+        if (!is(';')) init = isDeclStart() ? decl(false) : { k: 'exprs', list: exprStmtList(), line: t.line };
+        expect(';');
+        let c = null, csrc = '';
+        if (!is(';')) { const s0 = p; c = expr(); csrc = textOf(s0, p); }
+        expect(';');
+        let upd = [], usrc = '';
+        if (!is(')')) { const s0 = p; upd = exprStmtList(); usrc = textOf(s0, p); }
+        expect(')');
+        return { k: 'for', init, c, csrc, upd, usrc, body: stmt(), line: t.line };
+      }
+      if (is('return')) { next(); let e = null; if (!is(';')) e = expr(); expect(';'); return { k: 'return', e, line: t.line }; }
+      if (is('break')) { next(); expect(';'); return { k: 'break', line: t.line }; }
+      if (is('continue')) { next(); expect(';'); return { k: 'continue', line: t.line }; }
+      if (is('else')) throw compile("'else' without 'if'", t.line);
+      const s0 = p; const list = exprStmtList();
+      if (list.length > 1) throw compile("';' expected", peek().line);
+      expect(';');
+      return { k: 'expr', e: list[0], line: t.line, src: textOf(s0, p) };
+    }
+
+    function method(mods) {
+      const line = peek().line;
+      const ret = parseType(); const nm = ident();
+      expect('('); const params = [];
+      if (!is(')')) {
+        do { if (params.length) next(); const ty = parseType(); const pn = ident(); params.push({ ty, name: pn.v }); } while (is(','));
+      }
+      expect(')');
+      if (!mods.includes('static')) throw compile('this playground only runs static methods; add the word static to ' + nm.v, line);
+      return { name: nm.v, ret, params, body: block(), line };
+    }
+
+    const prog = { methods: {}, main: null, cls: null };
+    let o = 0; while (is('public', o) || is('final', o)) o++;
+    if (is('class', o)) {
+      p += o; expect('class'); prog.cls = ident().v; expect('{');
+      while (!is('}')) {
+        if (peek().k === 'eof') throw compile("reached end of file while parsing (missing '}')", peek().line);
+        const mods = []; while (['public', 'private', 'static', 'final'].includes(peek().v) && peek().k === 'id') mods.push(next().v);
+        if (is('(', 2) || (is('[', 1) && is('(', 4))) {
+          const m = method(mods);
+          (prog.methods[m.name] = prog.methods[m.name] || []).push(m);
+        } else throw compile('this playground does not support fields; declare variables inside methods', peek().line);
+      }
+      expect('}');
+      if (peek().k !== 'eof') throw compile('class, interface, enum, or record expected', peek().line);
+      const mm = (prog.methods.main || [])[0];
+      if (!mm) throw compile('no main method found (public static void main(String[] args))', 1);
+      prog.main = mm;
+    } else {
+      const body = [];
+      while (peek().k !== 'eof') body.push(stmt());
+      prog.main = { name: 'main', ret: 'void', params: [], body: { k: 'block', body, line: 1 }, line: 1 };
+    }
+    return prog;
+  }
+
+  // ----- values -----
+  let strId = 0; const pool = new Map();
+  const S = (v, lit) => { if (lit) { if (!pool.has(v)) pool.set(v, ++strId); return { t: 'String', v, id: pool.get(v) }; } return { t: 'String', v, id: ++strId }; };
+  const I = v => ({ t: 'int', v: v | 0 });
+  const D = v => ({ t: 'double', v });
+  const B = v => ({ t: 'boolean', v: !!v });
+  const NUM = x => x.t === 'int' || x.t === 'double';
+
+  function fmtDouble(v) {
+    if (Number.isNaN(v)) return 'NaN';
+    if (v === Infinity) return 'Infinity';
+    if (v === -Infinity) return '-Infinity';
+    if (v === 0) return Object.is(v, -0) ? '-0.0' : '0.0';
+    const a = Math.abs(v);
+    if (a >= 1e-3 && a < 1e7) { const s = String(v); return s.includes('.') ? s : s + '.0'; }
+    let [m, e] = v.toExponential().split('e');
+    if (!m.includes('.')) m += '.0';
+    return m + 'E' + (e[0] === '+' ? e.slice(1) : e);
+  }
+  function jstr(x) {
+    switch (x.t) {
+      case 'int': return String(x.v);
+      case 'double': return fmtDouble(x.v);
+      case 'boolean': return x.v ? 'true' : 'false';
+      case 'String': return x.v;
+      case 'null': return 'null';
+      default: return '';
+    }
+  }
+  function show(x) { if (!x) return '?'; if (x.t === 'String') return JSON.stringify(x.v); return jstr(x); }
+  const tname = x => x.t === 'null' ? 'null' : x.t;
+
+  function coerce(ty, x, line, what) {
+    if (x.t === 'void') throw compile("'void' type not allowed here", line);
+    if (ty === 'int') { if (x.t === 'int') return x; if (x.t === 'double') throw compile('incompatible types: possible lossy conversion from double to int' + (what ? ' (' + what + ')' : ''), line); }
+    if (ty === 'double') { if (x.t === 'double') return x; if (x.t === 'int') return D(x.v); }
+    if (ty === 'boolean' && x.t === 'boolean') return x;
+    if (ty === 'String' && (x.t === 'String' || x.t === 'null')) return x;
+    throw compile('incompatible types: ' + tname(x) + ' cannot be converted to ' + ty, line);
+  }
+
+  function bin(op, a, b, line) {
+    if (a.t === 'void' || b.t === 'void') throw compile("'void' type not allowed here", line);
+    if (op === '+' && (a.t === 'String' || b.t === 'String')) return S(jstr(a) + jstr(b));
+    if (['+', '-', '*', '/', '%'].includes(op)) {
+      if (!NUM(a) || !NUM(b)) throw compile("bad operand types for binary operator '" + op + "' (" + tname(a) + ', ' + tname(b) + ')', line);
+      if (a.t === 'int' && b.t === 'int') {
+        const x = a.v, y = b.v;
+        switch (op) {
+          case '+': return I(x + y);
+          case '-': return I(x - y);
+          case '*': return I(Math.imul(x, y));
+          case '/': if (y === 0) throw thrown('ArithmeticException', '/ by zero', line); return I(Math.trunc(x / y));
+          case '%': if (y === 0) throw thrown('ArithmeticException', '/ by zero', line); return I(x % y);
+        }
+      }
+      const x = a.v, y = b.v;
+      switch (op) { case '+': return D(x + y); case '-': return D(x - y); case '*': return D(x * y); case '/': return D(x / y); case '%': return D(x % y); }
+    }
+    if (['<', '>', '<=', '>='].includes(op)) {
+      if (!NUM(a) || !NUM(b)) throw compile("bad operand types for binary operator '" + op + "' (" + tname(a) + ', ' + tname(b) + ')', line);
+      return B(op === '<' ? a.v < b.v : op === '>' ? a.v > b.v : op === '<=' ? a.v <= b.v : a.v >= b.v);
+    }
+    if (op === '==' || op === '!=') {
+      let r;
+      if (NUM(a) && NUM(b)) r = a.v === b.v;
+      else if (a.t === 'boolean' && b.t === 'boolean') r = a.v === b.v;
+      else if ((a.t === 'String' || a.t === 'null') && (b.t === 'String' || b.t === 'null')) r = a.t === 'null' ? b.t === 'null' : (b.t !== 'null' && a.id === b.id);
+      else throw compile('incomparable types: ' + tname(a) + ' and ' + tname(b), line);
+      return B(op === '==' ? r : !r);
+    }
+    throw compile('unknown operator ' + op, line);
+  }
+
+  // ----- interpreter -----
+  const SIG_BREAK = { sig: 'break' }, SIG_CONT = { sig: 'continue' };
+  const MAX_STEPS = 4000;
+
+  function run(src, opts = {}) {
+    strId = 0; pool.clear();
+    const res = { steps: [], out: '', error: null };
+    let prog;
+    try { prog = parse(src); }
+    catch (e) { if (e instanceof JErr) { res.error = { kind: 'compile', msg: e.message, line: e.line }; return res; } throw e; }
+
+    const frames = [];
+    let out = '';
+    const maxSteps = opts.maxSteps || MAX_STEPS;
+    const record = opts.record !== false;
+    let count = 0;
+
+    function snapshot(line, note, changed) {
+      count++;
+      if (count > maxSteps) throw thrown('Timeout', 'Stopped after ' + maxSteps + ' steps. This is probably an infinite loop: check that the loop condition can become false.', line);
+      if (!record) return;
+      res.steps.push({
+        line, note, changed: changed || null, out,
+        frames: frames.map(f => ({ name: f.name, line: f.line, vars: f.scopes.flatMap(sc => [...sc.entries()].map(([n, v]) => ({ n, ty: v.ty, val: v.val ? show(v.val) : '(no value)' }))) }))
+      });
+    }
+    const top = () => frames[frames.length - 1];
+    function lookup(name, line) {
+      const f = top();
+      for (let i = f.scopes.length - 1; i >= 0; i--) if (f.scopes[i].has(name)) return f.scopes[i].get(name);
+      throw compile('cannot find symbol: variable ' + name, line);
+    }
+    function get(name, line) {
+      const v = lookup(name, line);
+      if (!v.val) throw compile('variable ' + name + ' might not have been initialized', line);
+      return v.val;
+    }
+    function declare(name, ty, val, line) {
+      for (const sc of top().scopes) if (sc.has(name)) throw compile('variable ' + name + ' is already defined', line);
+      top().scopes[top().scopes.length - 1].set(name, { ty, val });
+    }
+
+    function* call(m, argv, line) {
+      if (frames.length > 60) throw thrown('StackOverflowError', 'too many nested method calls', line);
+      const f = { name: m.name, scopes: [new Map()], line, m };
+      frames.push(f);
+      if (m !== prog.main) m.params.forEach((pp, i) => declare(pp.name, pp.ty, coerce(pp.ty, argv[i], line, 'argument ' + (i + 1)), line));
+      if (m.name !== 'main' || frames.length > 1) snapshot(m.line, 'Called ' + m.name + '(' + argv.map(show).join(', ') + '). Parameters get copies of the arguments.');
+      let ret = { t: 'void' };
+      try { yield* execBlock(m.body, false); if (m.ret !== 'void') throw compile('missing return statement in ' + m.name, m.line); }
+      catch (e) { if (e && e.sig === 'return') ret = e.val; else throw e; }
+      finally { frames.pop(); }
+      return ret;
+    }
+
+    function pickMethod(name, argv, line) {
+      const ms = prog.methods[name];
+      if (!ms) throw compile('cannot find symbol: method ' + name, line);
+      const ok = ms.filter(m => m.params.length === argv.length && m.params.every((pp, i) => { try { coerce(pp.ty, argv[i], line); return true; } catch (e) { return false; } }));
+      if (!ok.length) throw compile('method ' + name + ' cannot be applied to (' + argv.map(tname).join(', ') + ')', line);
+      return ok.find(m => m.params.every((pp, i) => pp.ty === argv[i].t)) || ok[0];
+    }
+
+    function* evArgs(list) { const a = []; for (const x of list) a.push(yield* ev(x)); return a; }
+
+    function* ev(e) {
+      switch (e.k) {
+        case 'lit': return e.val.t === 'String' ? S(e.val.v, true) : e.val;
+        case 'var': return get(e.name, e.line);
+        case 'cond': { const c = yield* ev(e.c); if (c.t !== 'boolean') throw compile('incompatible types: ' + tname(c) + ' cannot be converted to boolean', e.line); return yield* ev(c.v ? e.a : e.b); }
+        case 'bin': {
+          if (e.op === '&&' || e.op === '||') {
+            const a = yield* ev(e.l);
+            if (a.t !== 'boolean') throw compile("bad operand types for binary operator '" + e.op + "'", e.line);
+            if (e.op === '&&' && !a.v) return B(false);
+            if (e.op === '||' && a.v) return B(true);
+            const b = yield* ev(e.r);
+            if (b.t !== 'boolean') throw compile("bad operand types for binary operator '" + e.op + "'", e.line);
+            return b;
+          }
+          const a = yield* ev(e.l); const b = yield* ev(e.r);
+          return bin(e.op, a, b, e.line);
+        }
+        case 'un': {
+          const x = yield* ev(e.e);
+          if (e.op === '!') { if (x.t !== 'boolean') throw compile("bad operand type " + tname(x) + " for unary operator '!'", e.line); return B(!x.v); }
+          if (!NUM(x)) throw compile("bad operand type " + tname(x) + " for unary operator '" + e.op + "'", e.line);
+          if (e.op === '+') return x;
+          return x.t === 'int' ? I(-x.v) : D(-x.v);
+        }
+        case 'cast': {
+          const x = yield* ev(e.e);
+          if (e.ty === 'int') {
+            if (x.t === 'int') return x;
+            if (x.t === 'double') { const v = x.v; if (Number.isNaN(v)) return I(0); if (v >= 2147483647) return I(2147483647); if (v <= -2147483648) return I(-2147483648); return I(Math.trunc(v)); }
+          }
+          if (e.ty === 'double' && NUM(x)) return D(x.v);
+          if (e.ty === x.t) return x;
+          throw compile('incompatible types: ' + tname(x) + ' cannot be converted to ' + e.ty, e.line);
+        }
+        case 'assign': {
+          const v = lookup(e.name, e.line);
+          let r = yield* ev(e.rhs);
+          if (e.op === '=') { v.val = coerce(v.ty, r, e.line); return v.val; }
+          if (!v.val) throw compile('variable ' + e.name + ' might not have been initialized', e.line);
+          let res2 = bin(e.op[0], v.val, r, e.line);
+          if (v.ty === 'int' && res2.t === 'double') res2 = I(Math.trunc(res2.v));
+          else if (v.ty === 'String' && res2.t !== 'String') throw compile('incompatible types', e.line);
+          v.val = coerce(v.ty, res2, e.line);
+          return v.val;
+        }
+        case 'inc': {
+          const v = lookup(e.name, e.line);
+          if (!v.val) throw compile('variable ' + e.name + ' might not have been initialized', e.line);
+          if (!NUM(v.val)) throw compile("bad operand type " + tname(v.val) + " for unary operator '" + e.op + "'", e.line);
+          const old = v.val; const d = e.op === '++' ? 1 : -1;
+          v.val = old.t === 'int' ? I(old.v + d) : D(old.v + d);
+          return e.pre ? v.val : old;
+        }
+        case 'newstr': { const a = yield* evArgs(e.args); if (a.length !== 1 || a[0].t !== 'String') throw compile('new String(...) needs one String', e.line); return S(a[0].v); }
+        case 'math': return mathCall(e.fn, yield* evArgs(e.args), e.line);
+        case 'call': { const a = yield* evArgs(e.args); return yield* call(pickMethod(e.name, a, e.line), a, e.line); }
+        case 'mcall': {
+          const o = yield* ev(e.obj); const a = yield* evArgs(e.args);
+          return strMethod(o, e.name, a, e.line);
+        }
+        case 'print': {
+          const a = yield* evArgs(e.args);
+          if (e.fn === 'printf') { out += printf(a, e.line); return { t: 'void' }; }
+          if (a.length > 1) throw compile('no suitable method found for ' + e.fn + ' with ' + a.length + ' arguments', e.line);
+          if (a[0] && a[0].t === 'void') throw compile("'void' type not allowed here", e.line);
+          if (e.fn === 'print' && !a.length) throw compile('no suitable method found for print(no arguments)', e.line);
+          out += (a.length ? jstr(a[0]) : '') + (e.fn === 'println' ? '\n' : '');
+          return { t: 'void' };
+        }
+      }
+      throw compile('cannot evaluate ' + e.k, e.line);
+    }
+
+    function mathCall(fn, a, line) {
+      const need = n => { if (a.length !== n) throw compile('Math.' + fn + ' takes ' + n + ' argument' + (n === 1 ? '' : 's'), line); a.forEach(x => { if (!NUM(x)) throw compile('Math.' + fn + ' needs numbers, not ' + tname(x), line); }); };
+      switch (fn) {
+        case 'abs': need(1); return a[0].t === 'int' ? I(Math.abs(a[0].v)) : D(Math.abs(a[0].v));
+        case 'pow': need(2); return D(Math.pow(a[0].v, a[1].v));
+        case 'sqrt': need(1); return D(Math.sqrt(a[0].v));
+        case 'random': need(0); return D(opts.random ? opts.random() : Math.random());
+        case 'max': case 'min': need(2); { const r = Math[fn](a[0].v, a[1].v); return a[0].t === 'int' && a[1].t === 'int' ? I(r) : D(r); }
+      }
+      throw compile('Math.' + fn + ' is not part of the AP subset this playground supports', line);
+    }
+
+    function strMethod(o, name, a, line) {
+      if (o.t === 'null') throw thrown('NullPointerException', 'Cannot invoke "String.' + name + '()" because the value is null', line);
+      if (o.t !== 'String') throw compile(tname(o) + ' cannot be dereferenced (primitives have no methods)', line);
+      const s = o.v;
+      const argT = (i, t) => { if (!a[i] || (a[i].t !== t && !(t === 'String' && a[i].t === 'null'))) throw compile('incompatible argument for ' + name, line); };
+      switch (name) {
+        case 'length': if (a.length) throw compile('length() takes no arguments', line); return I(s.length);
+        case 'substring': {
+          if (a.length < 1 || a.length > 2) throw compile('substring takes 1 or 2 ints', line);
+          argT(0, 'int'); if (a.length === 2) argT(1, 'int');
+          const b = a[0].v, en = a.length === 2 ? a[1].v : s.length;
+          if (b < 0 || en > s.length || b > en) throw thrown('StringIndexOutOfBoundsException', 'begin ' + b + ', end ' + en + ', length ' + s.length, line);
+          return S(s.slice(b, en));
+        }
+        case 'indexOf': { argT(0, 'String'); if (a.length > 1) argT(1, 'int'); return I(s.indexOf(a[0].v, a.length > 1 ? Math.max(0, a[1].v) : 0)); }
+        case 'equals': if (a.length !== 1) throw compile('equals takes 1 argument', line); return B(a[0].t === 'String' && a[0].v === s);
+        case 'equalsIgnoreCase': return B(a[0].t === 'String' && a[0].v.toLowerCase() === s.toLowerCase());
+        case 'compareTo': {
+          argT(0, 'String'); if (a[0].t === 'null') throw thrown('NullPointerException', 'compareTo(null)', line);
+          const t = a[0].v; const lim = Math.min(s.length, t.length);
+          for (let k = 0; k < lim; k++) if (s.charCodeAt(k) !== t.charCodeAt(k)) return I(s.charCodeAt(k) - t.charCodeAt(k));
+          return I(s.length - t.length);
+        }
+        case 'toUpperCase': return S(s.toUpperCase());
+        case 'toLowerCase': return S(s.toLowerCase());
+        case 'contains': argT(0, 'String'); return B(s.includes(a[0].v));
+      }
+      throw compile('cannot find symbol: method ' + name + ' (not supported here)', line);
+    }
+
+    function printf(a, line) {
+      if (!a.length || a[0].t !== 'String') throw compile('printf needs a format String first', line);
+      let k = 1;
+      return a[0].v.replace(/%(-?\d*)(?:\.(\d+))?([dfsn%])/g, (m, w, prec, c) => {
+        if (c === 'n') return '\n'; if (c === '%') return '%';
+        const x = a[k++]; if (!x) throw thrown('MissingFormatArgumentException', "Format specifier '" + m + "'", line);
+        let r;
+        if (c === 'd') { if (x.t !== 'int') throw thrown('IllegalFormatConversionException', 'd != ' + x.t, line); r = String(x.v); }
+        else if (c === 'f') { if (x.t !== 'double') throw thrown('IllegalFormatConversionException', 'f != ' + x.t, line); r = x.v.toFixed(prec === undefined ? 6 : +prec); }
+        else r = jstr(x);
+        const width = Math.abs(+w || 0);
+        if (r.length < width) r = w.startsWith('-') ? r.padEnd(width) : r.padStart(width);
+        return r;
+      });
+    }
+
+    function* execBlock(b, scoped = true) {
+      if (scoped) top().scopes.push(new Map());
+      try { for (const s of b.body) yield* exec(s); }
+      finally { if (scoped) top().scopes.pop(); }
+    }
+
+    function describeExpr(e, val) {
+      if (e.k === 'assign') return e.name + (e.op === '=' ? '' : ' ' + e.op + ' ...') + ' → ' + e.name + ' is now ' + show(val);
+      if (e.k === 'inc') { const v = lookup(e.name, e.line); return e.name + e.op.replace(/./, '') + ' → ' + e.name + ' is now ' + show(v.val); }
+      if (e.k === 'print') return 'Printed to the console';
+      if (e.k === 'call') return 'Back from ' + e.name + '()' + (val && val.t !== 'void' ? ', it returned ' + show(val) : '');
+      return 'Ran ' + e.src;
+    }
+
+    function* exec(s) {
+      switch (s.k) {
+        case 'block': return yield* execBlock(s);
+        case 'empty': return;
+        case 'decl': {
+          const notes = [];
+          for (const v of s.vars) {
+            let val = null;
+            if (v.init) val = coerce(s.ty, yield* ev(v.init), s.line, v.name);
+            declare(v.name, s.ty, val, s.line);
+            notes.push(val ? s.ty + ' ' + v.name + ' = ' + show(val) : 'Declared ' + s.ty + ' ' + v.name + ' (no value yet)');
+          }
+          snapshot(s.line, notes.join('; '), s.vars.map(v => v.name));
+          return;
+        }
+        case 'expr': {
+          const before = out.length;
+          const val = yield* ev(s.e);
+          if (s.e.k === 'print') { snapshot(s.line, 'Printed ' + JSON.stringify(out.slice(before)).replace(/\\n/g, '↵'), null); return; }
+          const ch = s.e.k === 'assign' || s.e.k === 'inc' ? [s.e.name] : null;
+          snapshot(s.line, describeExpr(s.e, val), ch);
+          return;
+        }
+        case 'if': {
+          const c = yield* ev(s.c);
+          if (c.t !== 'boolean') throw compile('incompatible types: ' + tname(c) + ' cannot be converted to boolean', s.line);
+          snapshot(s.line, '(' + s.csrc + ') is ' + c.v + (c.v ? ' → run the if part' : s.b ? ' → skip to else' : ' → skip it'));
+          if (c.v) yield* scopedStmt(s.a); else if (s.b) yield* scopedStmt(s.b);
+          return;
+        }
+        case 'while': {
+          let iter = 0;
+          for (;;) {
+            const c = yield* ev(s.c);
+            if (c.t !== 'boolean') throw compile('incompatible types: ' + tname(c) + ' cannot be converted to boolean', s.line);
+            snapshot(s.line, '(' + s.csrc + ') is ' + c.v + (c.v ? ' → run the loop body (pass ' + (++iter) + ')' : ' → loop ends'));
+            if (!c.v) break;
+            try { yield* scopedStmt(s.body); }
+            catch (e) { if (e === SIG_BREAK) { snapshot(s.line, 'break → leave the loop'); break; } if (e !== SIG_CONT) throw e; }
+          }
+          return;
+        }
+        case 'for': {
+          top().scopes.push(new Map());
+          try {
+            if (s.init) {
+              if (s.init.k === 'decl') yield* exec(s.init);
+              else { for (const x of s.init.list) yield* ev(x); snapshot(s.line, 'Loop setup'); }
+            }
+            let iter = 0;
+            for (;;) {
+              let cv = true;
+              if (s.c) {
+                const c = yield* ev(s.c);
+                if (c.t !== 'boolean') throw compile('incompatible types: ' + tname(c) + ' cannot be converted to boolean', s.line);
+                cv = c.v;
+                snapshot(s.line, '(' + s.csrc + ') is ' + cv + (cv ? ' → run the loop body (pass ' + (++iter) + ')' : ' → loop ends'));
+              }
+              if (!cv) break;
+              try { yield* scopedStmt(s.body); }
+              catch (e) { if (e === SIG_BREAK) { snapshot(s.line, 'break → leave the loop'); break; } if (e !== SIG_CONT) throw e; }
+              const names = [];
+              for (const x of s.upd) { yield* ev(x); if (x.name) names.push(x.name); }
+              if (s.upd.length) snapshot(s.line, 'Update: ' + s.usrc + ' → ' + names.map(n => n + ' is now ' + show(lookup(n, s.line).val)).join(', '), names);
+            }
+          } finally { top().scopes.pop(); }
+          return;
+        }
+        case 'return': {
+          let val = { t: 'void' };
+          const m = frames.length;
+          if (s.e) val = yield* ev(s.e);
+          const fname = top().name;
+          const rt = top().m.ret;
+          if (rt === 'void' && s.e) throw compile('incompatible types: unexpected return value', s.line);
+          if (rt !== 'void' && !s.e) throw compile('missing return value', s.line);
+          if (rt !== 'void') val = coerce(rt, val, s.line);
+          snapshot(s.line, s.e ? 'return ' + show(val) + ' → leave ' + fname + '()' : 'return → leave ' + fname + '()');
+          throw { sig: 'return', val, depth: m };
+        }
+        case 'break': throw SIG_BREAK;
+        case 'continue': snapshot(s.line, 'continue → jump to the next pass'); throw SIG_CONT;
+      }
+    }
+    function* scopedStmt(s) {
+      if (s.k === 'decl') throw compile('variable declaration not allowed here (use { } braces)', s.line);
+      if (s.k === 'block') return yield* execBlock(s);
+      top().scopes.push(new Map());
+      try { yield* exec(s); } finally { top().scopes.pop(); }
+    }
+
+    try {
+      frames.length = 0;
+      const g = call(prog.main, [], prog.main.line);
+      let r = g.next(); while (!r.done) r = g.next();
+      res.steps.push({ line: null, note: 'Program finished.', out, frames: [], changed: null, end: true });
+    } catch (e) {
+      if (e instanceof JErr) {
+        res.error = { kind: e.kind, msg: e.message, line: e.line };
+        if (e.kind === 'compile') { res.steps = []; out = ''; }
+        res.steps.push({ line: e.line, note: (e.kind === 'compile' ? 'Compile error: ' : e.kind === 'Timeout' ? '' : 'Crash! ' + e.kind + ': ') + e.message, out, frames: res.steps.length ? res.steps[res.steps.length - 1].frames : [], changed: null, end: true, err: true });
+      } else if (e === SIG_BREAK) { res.error = { kind: 'compile', msg: 'break outside switch or loop', line: null }; }
+      else if (e === SIG_CONT) { res.error = { kind: 'compile', msg: 'continue outside of loop', line: null }; }
+      else throw e;
+    }
+    res.out = out;
+    return res;
+  }
+
+  return { run, parse, lex, fmtDouble };
+})();
+if (typeof module !== 'undefined') module.exports = JavaEngine;
+
+</script>
+<script>
+const DATA = {"topics":[{"id":"1.3","unit":1,"title":"Expressions and output","file":"Output.java","cards":[{"h":"print vs println","p":"<code>println<\/code> prints, then moves to a new line. <code>print<\/code> stays on the same line, so the next thing printed lands right after it.","code":"System.out.print(\"A\");\nSystem.out.print(\"B\");\nSystem.out.println(\"C\");\nSystem.out.println(\"D\");"},{"h":"Integer division throws away the decimal","p":"When <b>both<\/b> sides are <code>int<\/code>, Java does integer division: it chops off the decimal (it does not round). <code>7 / 2<\/code> is <code>3<\/code>, and <code>2 / 3<\/code> is <code>0<\/code>. If either side is a <code>double<\/code>, you get the real answer.","code":"System.out.println(7 / 2);\nSystem.out.println(2 / 3);\nSystem.out.println(7 / 2.0);\nSystem.out.println(7.0 / 2);","trap":"This is the single most tested trap in Unit 1. Before you compute any division, check the types first."},{"h":"% is the remainder","p":"<code>a % b<\/code> gives the remainder after dividing. <code>17 % 5<\/code> is <code>2<\/code> because 17 = 3×5 + 2. Two patterns show up constantly: <code>n % 2 == 0<\/code> means n is even, and <code>n % 10<\/code> is the last digit of n.","code":"System.out.println(17 % 5);\nSystem.out.println(10 % 2);\nSystem.out.println(4 % 7);\nSystem.out.println(1234 % 10);"},{"h":"Order of operations, and + with Strings","p":"<code>*<\/code>, <code>/<\/code>, <code>%<\/code> happen before <code>+<\/code> and <code>-<\/code>. Ties go left to right. Once a String is on one side of <code>+<\/code>, it glues text instead of adding. Java goes left to right, so where the String sits changes everything.","code":"System.out.println(2 + 3 * 4);\nSystem.out.println(\"1\" + 2 + 3);\nSystem.out.println(1 + 2 + \"3\");\nSystem.out.println(\"Sum: \" + (1 + 2));"}]},{"id":"1.4","unit":1,"title":"Variables and assignment","file":"Variables.java","cards":[{"h":"A variable is a labeled box","p":"Declaring (<code>int x;<\/code>) makes the box. Assigning (<code>x = 5;<\/code>) puts a value in it. Doing both at once (<code>int x = 5;<\/code>) is initializing. The <code>=<\/code> sign means \"store\", not \"equals\".","code":"int x;\nx = 5;\nint y = x + 2;\nx = 10;\nSystem.out.println(x + \" \" + y);","trap":"Changing x later does NOT change y. y got a copy of the value at that moment."},{"h":"Right side first, then store","p":"Java computes the whole right side using the <b>current<\/b> values, then stores the result on the left. That is why <code>x = x + 1<\/code> makes sense: take the old x, add 1, store it back.","code":"int count = 3;\ncount = count + 1;\ncount = count * 2;\nSystem.out.println(count);"},{"h":"Swapping needs a third variable","p":"If you write <code>a = b; b = a;<\/code> you lose a's original value. Save it in a temp variable first. Trace this one step by step and watch the boxes.","code":"int a = 1;\nint b = 2;\nint temp = a;\na = b;\nb = temp;\nSystem.out.println(a + \" \" + b);"}]},{"id":"1.5","unit":1,"title":"Casting and ranges","file":"Casting.java","cards":[{"h":"Casting changes the type","p":"<code>(int)<\/code> turns a double into an int by <b>chopping off<\/b> the decimal, toward zero. <code>(int) 3.99<\/code> is 3 and <code>(int) -3.99<\/code> is -3. <code>(double)<\/code> turns an int into a double. Java does int → double on its own (widening), but never double → int without a cast.","code":"System.out.println((int) 3.99);\nSystem.out.println((int) -3.99);\nSystem.out.println((double) 5);\ndouble d = 10;\nSystem.out.println(d);"},{"h":"Where the cast goes matters","p":"A cast only applies to the thing right after it. <code>(double) 7 / 2<\/code> casts the 7 first, so it is 7.0 / 2 = 3.5. But <code>(double) (7 / 2)<\/code> does the integer division first (3) and then casts: 3.0.","code":"System.out.println((double) 7 / 2);\nSystem.out.println((double) (7 / 2));\nSystem.out.println(7 / 2 * 1.0);"},{"h":"Rounding with a cast","p":"From your notes: for a positive number, <code>(int) (x + 0.5)<\/code> rounds to the nearest int. For negatives, subtract 0.5 instead.","code":"double a = 3.8;\ndouble b = 3.2;\nSystem.out.println((int) (a + 0.5));\nSystem.out.println((int) (b + 0.5));\ndouble c = -3.8;\nSystem.out.println((int) (c - 0.5));"},{"h":"int has a max, and it wraps","p":"An int holds -2147483648 to 2147483647 (<code>Integer.MIN_VALUE<\/code> to <code>Integer.MAX_VALUE<\/code>). Going past the max does not crash. It wraps around to the minimum. That is overflow.","code":"int big = Integer.MAX_VALUE;\nSystem.out.println(big);\nSystem.out.println(big + 1);"}]},{"id":"1.6","unit":1,"title":"Compound assignment","file":"Compound.java","cards":[{"h":"Shortcuts","p":"<code>x += 3<\/code> means <code>x = x + 3<\/code>. Same idea for <code>-=<\/code>, <code>*=<\/code>, <code>/=<\/code>, <code>%=<\/code>. <code>x++<\/code> adds 1 and <code>x--<\/code> subtracts 1. On the AP exam, ++ and -- are used as their own statements, so you do not need the x++ vs ++x tricks.","code":"int x = 10;\nx += 5;\nx -= 3;\nx *= 2;\nx /= 5;\nx %= 3;\nx++;\nSystem.out.println(x);"},{"h":"Integer rules still apply","p":"<code>/=<\/code> on an int still does integer division. Run this and predict each line before stepping.","code":"int n = 17;\nn /= 2;\nSystem.out.println(n);\nn %= 3;\nSystem.out.println(n);"}]},{"id":"1.9","unit":1,"title":"Methods: headers, calls, return","file":"Methods.java","cards":[{"h":"Reading a method header","p":"<code>public static int square(int n)<\/code>: <code>int<\/code> is the return type (what comes back), <code>square<\/code> is the name, <code>int n<\/code> is the parameter. The <b>signature<\/b> is just the name plus parameter types: <code>square(int)<\/code>. The return type is not part of the signature.","code":"public class Main {\n    public static int square(int n) {\n        return n * n;\n    }\n\n    public static void main(String[] args) {\n        int a = square(3);\n        System.out.println(a);\n        System.out.println(square(a));\n    }\n}"},{"h":"void vs non-void","p":"A <code>void<\/code> method does something and gives nothing back, so you just call it on its own line. A non-void method hands back a value with <code>return<\/code>, and you should use that value (store it or print it). <code>return<\/code> ends the method immediately.","code":"public class Main {\n    public static void greet(String name) {\n        System.out.println(\"Hi \" + name);\n    }\n\n    public static int twice(int x) {\n        return x * 2;\n        // anything here would never run\n    }\n\n    public static void main(String[] args) {\n        greet(\"Dylan\");\n        twice(5);\n        System.out.println(twice(5));\n    }\n}","trap":"twice(5) on its own line runs, but the 10 it returns is thrown away. Nothing prints."},{"h":"Parameters get copies","p":"When you call a method, each argument's value is <b>copied<\/b> into the parameter. Changing the parameter inside the method does not change the caller's variable. Step through and watch two separate frames.","code":"public class Main {\n    public static void addTen(int n) {\n        n = n + 10;\n        System.out.println(\"inside: \" + n);\n    }\n\n    public static void main(String[] args) {\n        int score = 5;\n        addTen(score);\n        System.out.println(\"outside: \" + score);\n    }\n}"},{"h":"Overloading","p":"Two methods can share a name if their parameter lists differ. Java picks the one whose signature matches the arguments.","code":"public class Main {\n    public static int add(int a, int b) {\n        return a + b;\n    }\n\n    public static double add(double a, double b) {\n        return a + b;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(add(2, 3));\n        System.out.println(add(2.0, 3));\n    }\n}"}]},{"id":"1.11","unit":1,"title":"The Math class","file":"MathClass.java","cards":[{"h":"The four you need","p":"<code>Math.abs(x)<\/code> absolute value (int in, int out; double in, double out). <code>Math.pow(a, b)<\/code> a to the b, <b>always a double<\/b>. <code>Math.sqrt(x)<\/code> square root, always a double. <code>Math.random()<\/code> a double from 0.0 up to but not including 1.0.","code":"System.out.println(Math.abs(-4));\nSystem.out.println(Math.abs(-3.5));\nSystem.out.println(Math.pow(2, 3));\nSystem.out.println(Math.sqrt(9));\nSystem.out.println(Math.sqrt(2));"},{"h":"Random ints in a range","p":"Stretch, cast, shift: <code>(int) (Math.random() * (max - min + 1)) + min<\/code>. For 1 to 6 that is <code>(int) (Math.random() * 6) + 1<\/code>. The parentheses around the multiply matter: <code>(int) Math.random() * 6<\/code> casts first and is always 0.","code":"int die = (int) (Math.random() * 6) + 1;\nSystem.out.println(\"You rolled \" + die);\nint broken = (int) Math.random() * 6;\nSystem.out.println(\"Broken version: \" + broken);"},{"h":"Nested calls run inside out","p":"The inner call runs first and its result becomes the argument for the outer call. Classic example: distance between two points.","code":"int x1 = 0, y1 = 0, x2 = 3, y2 = 4;\ndouble dist = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));\nSystem.out.println(dist);"}]},{"id":"1.12","unit":1,"title":"Objects, references, and null","file":"Objects.java","cards":[{"h":"Class vs object","p":"A <b>class<\/b> is the blueprint (Turtle). An <b>object<\/b> is one actual thing built from it (yertle). <code>new<\/code> calls a <b>constructor<\/b>, which builds the object and sets its starting values. A class can have several constructors with different parameter lists (overloading).","code":"String a = new String(\"hi\");\nString b = \"hello\";\nSystem.out.println(a.length() + b.length());"},{"h":"Reference variables hold an address","p":"A primitive variable (<code>int x = 5<\/code>) holds the value itself. An object variable holds a <b>reference<\/b>: where the object lives in memory. <code>null<\/code> means it points at nothing. Calling a method on null crashes with a NullPointerException.","code":"String name = null;\nSystem.out.println(\"before\");\nSystem.out.println(name.length());\nSystem.out.println(\"after\");","trap":"\"after\" never prints. The crash stops the program on the line where it happens."},{"h":"Instance vs class (static) methods","p":"Instance methods are called on an object: <code>yertle.forward()<\/code>, <code>name.length()<\/code>. Class methods are static and called on the class name: <code>Math.sqrt(9)<\/code>. A getter like <code>getWidth()<\/code> is a non-void instance method that hands back a value.","code":"String word = \"turtle\";\nint n = word.length();\ndouble r = Math.sqrt(n * 6);\nSystem.out.println(n + \" \" + r);"}]},{"id":"1.15","unit":1,"title":"String methods","file":"Strings.java","cards":[{"h":"Indexes start at 0","p":"In <code>\"HELLO\"<\/code>, H is index 0 and O is index 4. <code>length()<\/code> is 5. The last index is always <code>length() - 1<\/code>.","code":"String s = \"HELLO\";\nSystem.out.println(s.length());\nSystem.out.println(s.substring(0, 1));\nSystem.out.println(s.substring(4, 5));"},{"h":"substring(a, b) stops BEFORE b","p":"<code>s.substring(1, 4)<\/code> gives indexes 1, 2, 3 (not 4). Length of the result is b - a. <code>s.substring(a)<\/code> goes from a to the end. Going past the end crashes with StringIndexOutOfBoundsException. <code>substring(i, i + 1)<\/code> grabs one letter: you will use that pattern constantly in Unit 2.","code":"String s = \"COMPUTER\";\nSystem.out.println(s.substring(1, 4));\nSystem.out.println(s.substring(5));\nSystem.out.println(s.substring(3, 3));\nSystem.out.println(s.substring(2, 3));"},{"h":"indexOf finds, -1 means not found","p":"<code>s.indexOf(\"x\")<\/code> returns the index of the first match, or <b>-1<\/b> if it is not there.","code":"String s = \"banana\";\nSystem.out.println(s.indexOf(\"a\"));\nSystem.out.println(s.indexOf(\"nan\"));\nSystem.out.println(s.indexOf(\"z\"));"},{"h":"equals, compareTo, and immutability","p":"Compare String contents with <code>.equals()<\/code>, never <code>==<\/code> (that compares addresses). <code>a.compareTo(b)<\/code> is negative if a comes first alphabetically, 0 if equal, positive if a comes after. Strings never change: <code>s.toUpperCase()<\/code> makes a <b>new<\/b> String; s stays the same unless you reassign it.","code":"String a = \"apple\";\nString b = \"banana\";\nSystem.out.println(a.compareTo(b) < 0);\nSystem.out.println(a.equals(\"apple\"));\nString s = \"hi\";\ns.toUpperCase();\nSystem.out.println(s);\ns = s.toUpperCase();\nSystem.out.println(s);"}]},{"id":"2.1","unit":2,"title":"Algorithms: the 3 building blocks","file":"Algorithms.java","cards":[{"h":"Sequencing, selection, repetition","p":"Every algorithm is built from three things. <b>Sequencing<\/b>: steps run in order. <b>Selection<\/b>: a true/false decision picks a path (if statements). <b>Repetition<\/b>: steps repeat until something changes (loops). Your notes' ATM example has all three.","code":"int balance = 100;\nint withdraw = 30;\nif (withdraw <= balance) {\n    balance -= withdraw;\n}\nint months = 0;\nwhile (balance < 200) {\n    balance += 50;\n    months++;\n}\nSystem.out.println(balance + \" after \" + months + \" months\");"},{"h":"Order matters","p":"The same steps in a different order can give a different result. Check permission before showing data, check the divisor before dividing.","code":"int x = 5;\nx = x * 2;\nx = x + 3;\nSystem.out.println(x);\nint y = 5;\ny = y + 3;\ny = y * 2;\nSystem.out.println(y);"}]},{"id":"2.2","unit":2,"title":"Boolean expressions","file":"Booleans.java","cards":[{"h":"Every comparison is true or false","p":"The operators <code>==  !=  &lt;  &gt;  &lt;=  &gt;=<\/code> produce a boolean. Math happens first, then the comparison. A <code>boolean<\/code> variable can store the result.","code":"int score = 60;\nboolean passed = score >= 60;\nSystem.out.println(passed);\nSystem.out.println(score > 60);\nSystem.out.println(score + 5 == 65);\nSystem.out.println(score != 60);"},{"h":"Boundary values","p":"The most common trace mistake: <code>&gt;<\/code> vs <code>&gt;=<\/code> when the value is exactly on the line. When a question gives you 60 and the condition says 60, slow down.","code":"int age = 13;\nSystem.out.println(age > 13);\nSystem.out.println(age >= 13);\nSystem.out.println(age < 13);"},{"h":"= stores, == compares","p":"<code>=<\/code> is assignment. <code>==<\/code> asks a question. <code>if (x = 5)<\/code> does not even compile in Java because x = 5 is an int, not a boolean.","code":"int x = 3;\nboolean same = x == 3;\nx = 4;\nSystem.out.println(same);\nSystem.out.println(x == 3);"},{"h":"== vs .equals for Strings","p":"This is the \"String pool?\" question from your notes. For objects, <code>==<\/code> asks \"are these the <b>same object<\/b> in memory?\" <code>.equals<\/code> asks \"do they have the <b>same text<\/b>?\" Java reuses one object for identical literals like <code>\"hi\"<\/code> (that is the String pool), so == can accidentally work, then fail when a String is built with <code>new<\/code> or by a method. Always use .equals for Strings.","code":"String a = \"hi\";\nString b = \"hi\";\nString c = new String(\"hi\");\nSystem.out.println(a == b);\nSystem.out.println(a == c);\nSystem.out.println(a.equals(c));","trap":"a == b is true only because both point at the same pooled \"hi\". a == c is false even though the text matches."}]},{"id":"2.3","unit":2,"title":"if statements","file":"IfStatements.java","cards":[{"h":"One-way: if","p":"If the condition is true, run the block. If false, skip it and continue after the closing brace.","code":"int temp = 85;\nif (temp > 80) {\n    System.out.println(\"Hot\");\n}\nSystem.out.println(\"Done\");"},{"h":"Two-way: if / else","p":"Exactly one of the two blocks runs. Never both, never neither.","code":"int n = 7;\nif (n % 2 == 0) {\n    System.out.println(\"even\");\n} else {\n    System.out.println(\"odd\");\n}"},{"h":"Multiway: else if chain","p":"Java checks top to bottom and runs only the <b>first<\/b> true branch, then skips the rest of the chain. Order your conditions from most specific to least.","code":"int score = 85;\nif (score >= 90) {\n    System.out.println(\"A\");\n} else if (score >= 80) {\n    System.out.println(\"B\");\n} else if (score >= 70) {\n    System.out.println(\"C\");\n} else {\n    System.out.println(\"F\");\n}","trap":"score >= 70 is also true, but it never gets checked. The chain stopped at B."},{"h":"Separate ifs are NOT a chain","p":"Three separate <code>if<\/code>s each get checked on their own, so several can run. Compare this to the chain above.","code":"int score = 85;\nif (score >= 90) {\n    System.out.println(\"A\");\n}\nif (score >= 80) {\n    System.out.println(\"B\");\n}\nif (score >= 70) {\n    System.out.println(\"C\");\n}"}]},{"id":"2.4","unit":2,"title":"Nested if statements","file":"NestedIf.java","cards":[{"h":"An if inside an if","p":"The inner if is only checked when the outer condition is true. Think of it as a gate, then another gate.","code":"int age = 16;\nboolean hasPermit = false;\nif (age >= 16) {\n    if (hasPermit) {\n        System.out.println(\"Can drive\");\n    } else {\n        System.out.println(\"Get a permit\");\n    }\n} else {\n    System.out.println(\"Too young\");\n}"},{"h":"else belongs to the closest if","p":"Without braces, an <code>else<\/code> attaches to the nearest unmatched <code>if<\/code>, no matter how it is indented. Indentation means nothing to Java.","code":"int x = 5;\nif (x > 10)\n    if (x > 20)\n        System.out.println(\"big\");\nelse\n    System.out.println(\"not big\");\nSystem.out.println(\"end\");","trap":"Looks like the else goes with x > 10, but it goes with x > 20. Since x > 10 is false, nothing inside runs."},{"h":"From your Battle Damage lab","p":"Nested ifs are how the lab worked: first check hit or miss, and only on a hit check the weapon and critical. Here is the same logic with a fixed roll so you can trace it.","code":"int roll = 19;\nint armorClass = 4;\nint level = 3;\nint weapon = 2;\nif (roll >= armorClass * 3) {\n    int damage = 10 + level;\n    if (weapon == 1) {\n        damage += 2;\n    } else if (weapon == 2) {\n        damage += 1;\n    } else {\n        damage += 3;\n    }\n    if (roll >= 18) {\n        damage *= 2;\n    }\n    damage -= armorClass;\n    System.out.println(\"Hit for \" + damage);\n} else {\n    System.out.println(\"MISS\");\n}"}]},{"id":"2.5","unit":2,"title":"Compound boolean expressions","file":"Compound.java","cards":[{"h":"&&, ||, !","p":"<code>a && b<\/code> is true only if both are true. <code>a || b<\/code> is true if at least one is true. <code>!a<\/code> flips it. Order: <code>!<\/code> first, then <code>&&<\/code>, then <code>||<\/code> (like × before +).","code":"int x = 7;\nSystem.out.println(x > 5 && x < 10);\nSystem.out.println(x < 5 || x == 7);\nSystem.out.println(!(x > 5));\nSystem.out.println(true || false && false);"},{"h":"Short-circuit evaluation","p":"Java stops as soon as it knows the answer. With <code>&&<\/code>, if the left side is false, the right side never runs. With <code>||<\/code>, if the left is true, the right never runs. This is how you avoid crashes, like dividing by zero.","code":"int count = 0;\nint total = 50;\nif (count != 0 && total / count > 10) {\n    System.out.println(\"big average\");\n} else {\n    System.out.println(\"safe\");\n}","trap":"Flip the two sides and this crashes with ArithmeticException, because total / count runs first."},{"h":"Ranges need two comparisons","p":"Math class lets you write 1 &lt; x &lt; 10. Java does not. Write <code>x &gt; 1 && x &lt; 10<\/code>. Outside a range uses <code>||<\/code>.","code":"int x = 12;\nboolean inside = x >= 1 && x <= 10;\nboolean outside = x < 1 || x > 10;\nSystem.out.println(inside + \" \" + outside);"}]},{"id":"2.6","unit":2,"title":"Comparing boolean expressions","file":"DeMorgan.java","cards":[{"h":"Equivalent means same result for EVERY input","p":"Two expressions are equivalent only if they match in every case. One mismatch and they are not. To check fast, test edge cases (the boundary value, and one on each side).","code":"int x = 5;\nSystem.out.println(!(x > 5));\nSystem.out.println(x <= 5);\nSystem.out.println(x < 5);"},{"h":"De Morgan's laws","p":"When you push a <code>!<\/code> inside parentheses, flip each piece and swap <code>&&<\/code> with <code>||<\/code>.<br><code>!(a && b)<\/code> is the same as <code>!a || !b<\/code><br><code>!(a || b)<\/code> is the same as <code>!a && !b<\/code><br>Flipping a comparison: <code>!(x &gt; 5)<\/code> becomes <code>x &lt;= 5<\/code> (not x &lt; 5).","code":"int x = 3;\nint y = 8;\nSystem.out.println(!(x > 5 && y > 5));\nSystem.out.println(x <= 5 || y <= 5);\nSystem.out.println(!(x > 5 || y > 5));\nSystem.out.println(x <= 5 && y <= 5);"}]},{"id":"2.7","unit":2,"title":"while loops","file":"WhileLoops.java","cards":[{"h":"The four parts of every loop","p":"1) <b>Initialize<\/b> a variable. 2) Check the <b>condition<\/b>. 3) Run the <b>body<\/b>. 4) <b>Update<\/b> so the loop can eventually stop. Then back to step 2. If the condition is false the very first time, the body runs zero times.","code":"int i = 1;\nwhile (i <= 3) {\n    System.out.println(\"pass \" + i);\n    i++;\n}\nSystem.out.println(\"i ended at \" + i);","trap":"After the loop, i is 4, not 3. The loop stops because i became 4 and the condition failed."},{"h":"Forget the update = infinite loop","p":"If nothing in the body moves the variable toward making the condition false, the loop never ends. Step through this and the debugger will stop it for you.","code":"int n = 5;\nwhile (n > 0) {\n    System.out.println(n);\n}"},{"h":"Indefinite loops: digits","p":"A while loop is perfect when you do not know the count ahead of time. Classic AP pattern: peel off digits with <code>% 10<\/code> (last digit) and <code>/ 10<\/code> (drop last digit) until nothing is left.","code":"int num = 4721;\nint sum = 0;\nwhile (num > 0) {\n    sum += num % 10;\n    num /= 10;\n}\nSystem.out.println(sum);"},{"h":"Sentinel loops","p":"A sentinel is a special stop value. The loop keeps going until it sees it. Here, doubling until we pass 100.","code":"int value = 3;\nint steps = 0;\nwhile (value <= 100) {\n    value *= 2;\n    steps++;\n}\nSystem.out.println(value + \" in \" + steps + \" steps\");"}]},{"id":"2.8","unit":2,"title":"for loops","file":"ForLoops.java","cards":[{"h":"All four parts on one line","p":"<code>for (init; condition; update)<\/code>. Order: init runs once, then condition → body → update → condition → body → update... until the condition is false. The update runs <b>after<\/b> the body.","code":"for (int i = 0; i < 4; i++) {\n    System.out.print(i + \" \");\n}\nSystem.out.println();"},{"h":"Counting how many times","p":"<code>i = 0; i &lt; n<\/code> runs n times. <code>i = 1; i &lt;= n<\/code> also runs n times. <code>i = 0; i &lt;= n<\/code> runs n + 1 times. Off-by-one errors are the most common loop bug.","code":"int a = 0;\nfor (int i = 0; i < 5; i++) { a++; }\nint b = 0;\nfor (int i = 1; i <= 5; i++) { b++; }\nint c = 0;\nfor (int i = 0; i <= 5; i++) { c++; }\nSystem.out.println(a + \" \" + b + \" \" + c);"},{"h":"Steps other than 1","p":"The update can be anything: count by 2, count down, multiply.","code":"for (int i = 10; i > 0; i -= 3) {\n    System.out.print(i + \" \");\n}\nSystem.out.println();\nfor (int k = 1; k < 50; k *= 3) {\n    System.out.print(k + \" \");\n}\nSystem.out.println();"},{"h":"for and while are the same machine","p":"Any for loop can be rewritten as a while loop: move the init above, the update to the end of the body. One difference: a variable declared in the for header disappears after the loop.","code":"for (int i = 0; i < 3; i++) {\n    System.out.print(i);\n}\nSystem.out.println();\nint j = 0;\nwhile (j < 3) {\n    System.out.print(j);\n    j++;\n}\nSystem.out.println();"}]},{"id":"2.9","unit":2,"title":"Loop algorithms","file":"LoopAlgorithms.java","cards":[{"h":"Accumulator: running total","p":"Start at 0 (or 1 for a product), add inside the loop. Your notes: \"on the AP exam there's always something with sums.\"","code":"int sum = 0;\nfor (int i = 1; i <= 5; i++) {\n    sum += i;\n}\nSystem.out.println(sum);"},{"h":"Counter: how many match","p":"Start a counter at 0 and add 1 only when an if is true.","code":"int count = 0;\nfor (int n = 1; n <= 20; n++) {\n    if (n % 3 == 0) {\n        count++;\n    }\n}\nSystem.out.println(count);"},{"h":"Min and max","p":"Start with the first value (or an extreme like Integer.MAX_VALUE for a min), then replace it whenever you see something better.","code":"int a = 7, b = 2, c = 9, d = 4;\nint max = a;\nif (b > max) { max = b; }\nif (c > max) { max = c; }\nif (d > max) { max = d; }\nSystem.out.println(max);"},{"h":"Early exit with a flag","p":"To check \"is there any...\" or \"are all...\", use a boolean that starts one way and flips if you find a counterexample. Example: is 29 prime?","code":"int n = 29;\nboolean isPrime = n > 1;\nfor (int d = 2; d < n; d++) {\n    if (n % d == 0) {\n        isPrime = false;\n    }\n}\nSystem.out.println(isPrime);"}]},{"id":"2.10","unit":2,"title":"String algorithms","file":"StringAlgorithms.java","cards":[{"h":"Walk through a String one letter at a time","p":"Loop i from 0 while <code>i &lt; s.length()<\/code>, and grab the letter with <code>s.substring(i, i + 1)<\/code>. Using <code>&lt;=<\/code> crashes on the last pass.","code":"String s = \"cat\";\nfor (int i = 0; i < s.length(); i++) {\n    String letter = s.substring(i, i + 1);\n    System.out.println(i + \": \" + letter);\n}"},{"h":"Count a letter","p":"Traverse plus a counter plus <code>.equals<\/code>.","code":"String word = \"mississippi\";\nint count = 0;\nfor (int i = 0; i < word.length(); i++) {\n    if (word.substring(i, i + 1).equals(\"s\")) {\n        count++;\n    }\n}\nSystem.out.println(count);"},{"h":"Build a new String","p":"Start with <code>\"\"<\/code> and add letters. Putting each new letter in front reverses the word.","code":"String s = \"stop\";\nString rev = \"\";\nfor (int i = 0; i < s.length(); i++) {\n    rev = s.substring(i, i + 1) + rev;\n}\nSystem.out.println(rev);"},{"h":"Find every match with indexOf","p":"Find a match, then chop off everything up to and including it, and search again. Stop when indexOf gives -1.","code":"String s = \"a-b-c-d\";\nint dashes = 0;\nint pos = s.indexOf(\"-\");\nwhile (pos != -1) {\n    dashes++;\n    s = s.substring(pos + 1);\n    pos = s.indexOf(\"-\");\n}\nSystem.out.println(dashes);"}]},{"id":"2.11","unit":2,"title":"Nested loops","file":"NestedLoops.java","cards":[{"h":"The inner loop runs all the way for each outer pass","p":"Outer loop starts pass 1 → inner loop runs completely → outer pass 2 → inner runs completely again. Like a clock: the minute hand goes all the way around for every hour.","code":"for (int row = 1; row <= 3; row++) {\n    for (int col = 1; col <= 4; col++) {\n        System.out.print(\"*\");\n    }\n    System.out.println();\n}"},{"h":"Total runs = outer × inner","p":"If the inner bounds do not depend on the outer variable, the inner body runs (outer count) × (inner count) times.","code":"int count = 0;\nfor (int i = 0; i < 3; i++) {\n    for (int j = 0; j < 5; j++) {\n        count++;\n    }\n}\nSystem.out.println(count);"},{"h":"Triangles: inner depends on outer","p":"When the inner bound uses the outer variable, each row gets a different length.","code":"for (int i = 1; i <= 4; i++) {\n    for (int j = 1; j <= i; j++) {\n        System.out.print(j);\n    }\n    System.out.println();\n}"}]},{"id":"2.12","unit":2,"title":"Counting loop runs","file":"RunTime.java","cards":[{"h":"Informal run-time analysis","p":"The AP exam asks \"how many times does this statement execute?\" Count passes with the formula, then check it by tracing a small case. For <code>i = a; i &lt; b; i++<\/code> the count is b - a. For <code>&lt;=<\/code> it is b - a + 1.","code":"int runs = 0;\nfor (int i = 3; i < 10; i++) {\n    runs++;\n}\nSystem.out.println(runs);"},{"h":"Steps that are not 1","p":"Counting by 2 roughly halves it. Doubling (i *= 2) grows fast, so very few passes. When in doubt, write out the values of i.","code":"int a = 0;\nfor (int i = 0; i < 10; i += 2) { a++; }\nint b = 0;\nfor (int i = 1; i < 100; i *= 2) { b++; }\nSystem.out.println(a + \" \" + b);"},{"h":"Triangle nested loops","p":"When the inner loop depends on the outer, add up each row: 1 + 2 + 3 + ... + n.","code":"int count = 0;\nfor (int i = 1; i <= 4; i++) {\n    for (int j = 1; j <= i; j++) {\n        count++;\n    }\n}\nSystem.out.println(count);"}]}],"questions":[{"t":"trace","topic":"1.3","code":"System.out.println(17 / 5);\nSystem.out.println(17 % 5);","wrong":["3.4\n2","3\n3","3.4\n0.4"],"why":"17 / 5 is int / int, so the decimal is chopped: 3. The remainder is 17 - 15 = 2.","id":"1.3-1rfiq4q","answer":"3\n2"},{"t":"trace","topic":"1.3","code":"System.out.print(\"Hi\");\nSystem.out.print(\"There\");\nSystem.out.println(\"!\");\nSystem.out.println(\"Bye\");","wrong":["Hi\nThere\n!\nBye","HiThere!Bye","Hi There !\nBye"],"why":"print stays on the same line. Only println moves to a new line after printing.","id":"1.3-p88v8u","answer":"HiThere!\nBye"},{"t":"trace","topic":"1.3","code":"System.out.println(1 + 2 + \"3\" + 4 + 5);","wrong":["15","12345","339"],"why":"Left to right: 1 + 2 = 3 (both ints). Then 3 + \"3\" = \"33\" (now a String). After that every + glues: \"334\", \"3345\".","id":"1.3-zpgk9r","answer":"3345"},{"t":"trace","topic":"1.3","code":"int a = 10;\nint b = 4;\ndouble c = a / b;\nSystem.out.println(c);","wrong":["2.5","2","3.0"],"why":"a / b is int / int = 2, computed BEFORE it gets stored. Storing 2 in a double just makes it 2.0.","id":"1.3-6nk0nx","answer":"2.0"},{"t":"trace","topic":"1.3","code":"System.out.println(10 - 4 / 2 * 3 % 4);","wrong":["9","1","6"],"why":"/, *, % go first, left to right: 4 / 2 = 2, 2 * 3 = 6, 6 % 4 = 2. Then 10 - 2 = 8.","id":"1.3-ztpuvz","answer":"8"},{"t":"trace","topic":"1.3","code":"System.out.println(5 % 8);\nSystem.out.println(8 % 8);\nSystem.out.println(-7 % 3);","wrong":["3\n1\n2","5\n0\n2","0\n0\n-2"],"why":"When the left side is smaller, the remainder is the whole left side: 5 % 8 = 5. 8 % 8 = 0. In Java the remainder takes the sign of the left side: -7 % 3 = -1.","id":"1.3-h10y7r","answer":"5\n0\n-1"},{"t":"trace","topic":"1.3","code":"System.out.println(\"Total: \" + 3 + 4);\nSystem.out.println(\"Total: \" + (3 + 4));","wrong":["Total: 7\nTotal: 7","Total: 34\nTotal: 34","Total: 7\nTotal: 34"],"why":"Without parentheses, \"Total: \" + 3 is a String, so + 4 glues another character. Parentheses force the addition first.","id":"1.3-uuk651","answer":"Total: 34\nTotal: 7"},{"t":"mc","topic":"1.3","q":"Which expression evaluates to 2.5?","answer":"5.0 / 2","wrong":["5 / 2","(double) (5 / 2)","5 / 2 * 1.0"],"why":"Only 5.0 / 2 has a double in the division itself. The others do integer division first (giving 2) and then turn 2 into 2.0.","id":"1.3-gd5p3v"},{"t":"trace","topic":"1.4","code":"int x = 4;\nint y = x;\nx = x + 3;\nSystem.out.println(x + \" \" + y);","wrong":["7 7","4 4","7 3"],"why":"y gets a copy of x's value (4) at that moment. Changing x afterwards does not touch y.","id":"1.4-1cgdoz8","answer":"7 4"},{"t":"trace","topic":"1.4","code":"int a = 5;\nint b = 9;\na = b;\nb = a;\nSystem.out.println(a + \" \" + b);","wrong":["9 5","5 9","5 5"],"why":"This swap is broken. After a = b, both are 9, and the original 5 is gone. You need a temp variable.","id":"1.4-11g01tm","answer":"9 9"},{"t":"trace","topic":"1.4","code":"int n = 2;\nn = n * n;\nn = n * n;\nn = n - 1;\nSystem.out.println(n);","wrong":["3","7","8"],"why":"2 → 4 → 16 → 15. Each line uses the value stored by the line before.","id":"1.4-3zemi3","answer":"15"},{"t":"fill","topic":"1.4","task":"Swap the values so it prints \"8 3\".","code":"int a = 3;\nint b = 8;\nint temp = a;\na = b;\n____\nSystem.out.println(a + \" \" + b);","opts":["b = temp;","b = a;","temp = b;","a = temp;"],"expect":"8 3","why":"temp saved a's original 3. a now holds 8, so b needs the saved 3 from temp.","id":"1.4-z1p3mq","optOut":["8 3","8 8","8 8","3 8"]},{"t":"bug","topic":"1.4","task":"Should print 15.","code":"int total;\ntotal = total + 15;\nSystem.out.println(total);","bug":1,"fix":"int total = 0;","expect":"15","why":"A local variable has no value until you give it one. Java refuses to compile total + 15 because total might not have been initialized.","id":"1.4-1wsbhx2","fixed":"int total = 0;\ntotal = total + 15;\nSystem.out.println(total);","bugOut":"Compile error"},{"t":"trace","topic":"1.5","code":"double d = 9.99;\nint n = (int) d;\nSystem.out.println(n);\nSystem.out.println((int) -9.99);","wrong":["10\n-10","9\n-10","10\n-9"],"why":"(int) truncates toward zero, it never rounds. 9.99 → 9 and -9.99 → -9.","id":"1.5-1ss5wzt","answer":"9\n-9"},{"t":"trace","topic":"1.5","code":"System.out.println((double) 9 / 2);\nSystem.out.println((double) (9 / 2));","wrong":["4.5\n4.5","4.0\n4.5","4\n4.0"],"why":"The cast grabs only the 9 in the first line (9.0 / 2 = 4.5). In the second, 9 / 2 = 4 happens first, then becomes 4.0.","id":"1.5-1qxyoc3","answer":"4.5\n4.0"},{"t":"trace","topic":"1.5","code":"int a = 7;\nint b = 2;\ndouble avg = (a + b) / 2;\nSystem.out.println(avg);","wrong":["4.5","4","5.0"],"why":"(a + b) / 2 is 9 / 2, an int division = 4. It is stored as 4.0. To fix it, divide by 2.0.","id":"1.5-1u5dlth","answer":"4.0"},{"t":"trace","topic":"1.5","code":"double x = 6.5;\nint r = (int) (x + 0.5);\nSystem.out.println(r);\ndouble y = 6.49;\nSystem.out.println((int) (y + 0.5));","wrong":["6\n6","7\n7","6\n7"],"why":"6.5 + 0.5 = 7.0 → 7. 6.49 + 0.5 = 6.99 → 6. That is how the +0.5 trick rounds.","id":"1.5-1add4xr","answer":"7\n6"},{"t":"trace","topic":"1.5","code":"int x = Integer.MAX_VALUE;\nx = x + 1;\nSystem.out.println(x < 0);","wrong":["false","Crash: ArithmeticException","Compile error"],"why":"Overflow does not crash. MAX_VALUE + 1 wraps around to MIN_VALUE, which is negative.","id":"1.5-1ykdzj7","answer":"true"},{"t":"fill","topic":"1.5","task":"Print the exact average 3.5 of a and b.","code":"int a = 3;\nint b = 4;\ndouble avg = ____;\nSystem.out.println(avg);","opts":["(a + b) / 2.0","(a + b) / 2","(double) ((a + b) / 2)","a + b / 2.0"],"expect":"3.5","why":"You need a double inside the division. (a + b) / 2.0 works. The others either do integer division first or divide only b (order of operations).","id":"1.5-1685aq","optOut":["3.5","3.0","3.0","5.0"]},{"t":"mc","topic":"1.5","q":"Which line will NOT compile?","answer":"int n = 4.0;","wrong":["double d = 4;","int n = (int) 4.7;","double d = 4 / 3;"],"why":"Java will automatically widen int → double, but never narrows double → int without a cast. 4.0 is a double.","id":"1.5-mfqrfd"},{"t":"trace","topic":"1.6","code":"int x = 6;\nx += 4;\nx *= 3;\nx -= 5;\nx /= 4;\nSystem.out.println(x);","wrong":["6.25","7","5"],"why":"6 → 10 → 30 → 25 → 25 / 4 = 6 (integer division).","id":"1.6-y0sd2a","answer":"6"},{"t":"trace","topic":"1.6","code":"int count = 0;\ncount++;\ncount++;\ncount--;\ncount += 10;\ncount %= 4;\nSystem.out.println(count);","wrong":["11","2","1"],"why":"0 → 1 → 2 → 1 → 11 → 11 % 4 = 3.","id":"1.6-1vfc5yo","answer":"3"},{"t":"mc","topic":"1.6","q":"After this code runs, what is the value of total?","code":"int total = 5;\ntotal *= 2 + 3;","answer":"25","wrong":["13","10","15"],"why":"The whole right side is computed first: 2 + 3 = 5. Then total = total * 5 = 25. It is NOT total * 2 + 3.","id":"1.6-8989ym"},{"t":"trace","topic":"1.9","code":"public class Main {\n    public static int triple(int n) {\n        return n * 3;\n    }\n\n    public static void main(String[] args) {\n        int a = triple(2);\n        int b = triple(a + 1);\n        System.out.println(a + \" \" + b);\n    }\n}","wrong":["6 7","6 9","2 21"],"why":"triple(2) = 6. Then a + 1 = 7 is passed in, so triple(7) = 21.","id":"1.9-utlxai","answer":"6 21"},{"t":"trace","topic":"1.9","code":"public class Main {\n    public static void change(int x) {\n        x = 100;\n    }\n\n    public static void main(String[] args) {\n        int x = 5;\n        change(x);\n        System.out.println(x);\n    }\n}","wrong":["100","105","Compile error"],"why":"The method gets a COPY of 5 in its own x. Setting that copy to 100 does nothing to main's x. Same name, different variable.","id":"1.9-1ebz1kd","answer":"5"},{"t":"trace","topic":"1.9","code":"public class Main {\n    public static int mystery(int a, int b) {\n        if (a > b) {\n            return a - b;\n        }\n        return b - a;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(mystery(3, 8));\n        System.out.println(mystery(8, 3));\n    }\n}","wrong":["-5\n5","5\n-5","-5\n-5"],"why":"return ends the method right away. mystery always returns the distance between a and b, so both are 5.","id":"1.9-pp1gq5","answer":"5\n5"},{"t":"trace","topic":"1.9","code":"public class Main {\n    public static void show(int n) {\n        System.out.print(n * 2 + \" \");\n    }\n\n    public static void main(String[] args) {\n        show(1);\n        show(3);\n        System.out.println(\"done\");\n    }\n}","wrong":["1 3 done","2\n6\ndone","done"],"why":"show prints n * 2 followed by a space, staying on the same line. Then println prints done.","id":"1.9-1vdjptw","answer":"2 6 done"},{"t":"mc","topic":"1.9","q":"What is the signature of this method?","code":"public static double average(int a, int b)","answer":"average(int, int)","wrong":["double average(int a, int b)","average(int a, int b)","public static double average"],"why":"A signature is the method name plus the parameter TYPES in order. The return type, modifiers and parameter names are not part of it.","id":"1.9-54gljy"},{"t":"mc","topic":"1.9","q":"In the call greet(\"Ana\"), what is \"Ana\"?","answer":"An argument (actual parameter)","wrong":["A formal parameter","The return value","The method signature"],"why":"Arguments are the values you pass in a call. Formal parameters are the variables in the method header that receive them.","id":"1.9-dc2l6e"},{"t":"bug","topic":"1.9","task":"half(9) should return 4.5.","code":"public class Main {\n    public static double half(int n) {\n        return n / 2;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(half(9));\n    }\n}","bug":3,"fix":"        return n / 2.0;","expect":"4.5","why":"n / 2 is int / int = 4, which becomes 4.0 when returned. Dividing by 2.0 keeps the decimal.","id":"1.9-1gofgsv","fixed":"public class Main {\n    public static double half(int n) {\n        return n / 2.0;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(half(9));\n    }\n}","bugOut":"4.0"},{"t":"trace","topic":"1.11","code":"System.out.println(Math.pow(3, 2));\nSystem.out.println(Math.abs(-7));\nSystem.out.println(Math.sqrt(16) + 1);","wrong":["9\n7\n5","6.0\n7\n5.0","9.0\n7.0\n5.0"],"why":"pow and sqrt always return a double (9.0, 5.0). abs keeps the type it was given: an int in, an int out.","id":"1.11-4s492n","answer":"9.0\n7\n5.0"},{"t":"mc","topic":"1.11","q":"Which expression gives a random int from 5 to 10, inclusive?","answer":"(int) (Math.random() * 6) + 5","wrong":["(int) (Math.random() * 10) + 5","(int) (Math.random() * 5) + 5","(int) Math.random() * 6 + 5"],"why":"Range size is max - min + 1 = 6. Math.random() * 6 is 0 to 5.999, cast gives 0 to 5, then +5 shifts to 5 to 10. The last option casts too early and is always 5.","id":"1.11-1xn9ylx"},{"t":"mc","topic":"1.11","q":"What are the possible values of x?","code":"int x = (int) (Math.random() * 4) + 2;","answer":"2, 3, 4, 5","wrong":["2, 3, 4, 5, 6","0, 1, 2, 3","2, 3, 4"],"why":"Math.random() * 4 is 0 up to (not including) 4. Cast: 0 to 3. Plus 2: 2 to 5.","id":"1.11-1akl3xi"},{"t":"trace","topic":"1.11","code":"int a = -3;\nint b = 4;\ndouble r = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));\nSystem.out.println(r);","wrong":["5","1.0","7.0"],"why":"Inner calls first: 9.0 + 16.0 = 25.0, sqrt is 5.0. Squaring a negative makes it positive.","id":"1.11-9zs3uj","answer":"5.0"},{"t":"mc","topic":"1.12","q":"What does a reference variable like Turtle t actually store?","answer":"The address of where the object lives in memory","wrong":["A copy of all the object's data","The class blueprint","The object's toString() text"],"why":"Primitives store values directly. Object variables store a reference (an address). That is why two variables can point at the same object.","id":"1.12-n45wps"},{"t":"trace","topic":"1.12","code":"String s = null;\nSystem.out.println(\"start\");\nSystem.out.println(s.length());\nSystem.out.println(\"end\");","wrong":["start\n0\nend","start\nnull\nend","Compile error"],"why":"It compiles fine. At run time, calling length() on null crashes with a NullPointerException, so \"end\" never prints. The answer shows the crash.","id":"1.12-3iez0w","answer":"start\nCrash: NullPointerException"},{"t":"mc","topic":"1.12","q":"Which call is a class (static) method call?","answer":"Math.abs(-2)","wrong":["yertle.forward()","name.length()","myTurtle.getWidth()"],"why":"Static methods are called on the class name. The others are called on an object, so they are instance methods.","id":"1.12-xd677u"},{"t":"mc","topic":"1.12","q":"A class has constructors Dog() and Dog(String name, int age). Which line will NOT compile?","answer":"Dog d = new Dog(3, \"Rex\");","wrong":["Dog d = new Dog();","Dog d = new Dog(\"Rex\", 3);","Dog d = null;"],"why":"Arguments must match a constructor's parameters in number, type AND order. There is no Dog(int, String).","id":"1.12-ovp3fc"},{"t":"mc","topic":"1.12","q":"What is the relationship between a class and an object?","answer":"An object is one instance built from the class blueprint","wrong":["A class is one instance built from an object","They are two words for the same thing","A class is a method inside an object"],"why":"The class defines what attributes and behaviors every object of that type has. Each object is one specific instance with its own values.","id":"1.12-1i5vm8d"},{"t":"trace","topic":"1.15","code":"String s = \"JAVASCRIPT\";\nSystem.out.println(s.substring(4, 7));\nSystem.out.println(s.substring(7));","wrong":["SCRI\nIPT","ASC\nRIPT","SCR\nRIPT"],"why":"Index 4 is S. substring(4, 7) takes 4, 5, 6 = SCR (stops before 7). substring(7) is index 7 to the end: IPT.","id":"1.15-uv05s1","answer":"SCR\nIPT"},{"t":"trace","topic":"1.15","code":"String s = \"hello\";\nSystem.out.println(s.indexOf(\"l\") + s.indexOf(\"x\"));","wrong":["2","1x","3"],"why":"indexOf(\"l\") is 2 (first match). indexOf(\"x\") is -1 (not found). 2 + -1 = 1.","id":"1.15-eb0btp","answer":"1"},{"t":"trace","topic":"1.15","code":"String s = \"code\";\ns.toUpperCase();\nSystem.out.println(s);\nString t = s.toUpperCase();\nSystem.out.println(t + s.length());","wrong":["CODE\nCODE4","code\nCODE","CODE\nCODE5"],"why":"Strings never change. The first toUpperCase() makes a new String and throws it away, so s is still \"code\". t stores the new one.","id":"1.15-1v0tms3","answer":"code\nCODE4"},{"t":"trace","topic":"1.15","code":"String s = \"abc\";\nSystem.out.println(s.substring(1, 4));","wrong":["bc","abc","c"],"why":"Indexes in \"abc\" go 0 to 2, and length is 3. Asking for up to 4 is past the end, so it crashes with StringIndexOutOfBoundsException.","id":"1.15-1rodi9g","answer":"Crash: StringIndexOutOfBoundsException"},{"t":"trace","topic":"1.15","code":"String a = \"cat\";\nString b = \"car\";\nSystem.out.println(a.compareTo(b) > 0);\nSystem.out.println(b.compareTo(\"car\") == 0);","wrong":["false\ntrue","true\nfalse","false\nfalse"],"why":"\"cat\" vs \"car\": first difference is t vs r. t comes after r, so a.compareTo(b) is positive. Same text compares to 0.","id":"1.15-qzo6z6","answer":"true\ntrue"},{"t":"fill","topic":"1.15","task":"Print the last letter of word (should print \"n\").","code":"String word = \"python\";\nSystem.out.println(____);","opts":["word.substring(word.length() - 1)","word.substring(word.length())","word.substring(word.length() - 1, word.length() + 1)","word.substring(5, 5)"],"expect":"n","why":"The last index is length() - 1. substring(length() - 1) goes from there to the end: one letter.","id":"1.15-1v83995","optOut":["n","(nothing printed)","Crash: StringIndexOutOfBoundsException","(nothing printed)"]},{"t":"mc","topic":"2.1","q":"An algorithm says: \"Read a number. If it is negative, make it positive. Repeat until the user enters 0.\" Which building blocks does it use?","answer":"Sequencing, selection, and repetition","wrong":["Only selection","Selection and repetition, but no sequencing","Only sequencing and repetition"],"why":"Steps in order = sequencing. \"If negative\" = selection. \"Repeat until 0\" = repetition. Every algorithm with any steps uses sequencing.","id":"2.1-1u1t5n3"},{"t":"mc","topic":"2.1","q":"In a flowchart, what shape shows a yes/no decision (selection)?","answer":"A diamond","wrong":["A rectangle","An oval","An arrow pointing backwards"],"why":"Diamonds are decisions. Rectangles are actions, ovals are start/end, and an arrow looping back shows repetition.","id":"2.1-uumtza"},{"t":"trace","topic":"2.1","code":"int x = 10;\nx = x - 4;\nx = x / 2;\nSystem.out.println(x);\nint y = 10;\ny = y / 2;\ny = y - 4;\nSystem.out.println(y);","wrong":["3\n3","1\n3","3\n4"],"why":"Same two steps, different order. (10 - 4) / 2 = 3, but 10 / 2 - 4 = 1. Sequencing matters.","id":"2.1-1bj5r32","answer":"3\n1"},{"t":"trace","topic":"2.2","code":"int score = 70;\nSystem.out.println(score > 70);\nSystem.out.println(score >= 70);\nSystem.out.println(score != 70);","wrong":["true\ntrue\nfalse","false\nfalse\nfalse","false\ntrue\ntrue"],"why":"Boundary check: 70 > 70 is false, 70 >= 70 is true, and 70 != 70 is false.","id":"2.2-cwqriy","answer":"false\ntrue\nfalse"},{"t":"trace","topic":"2.2","code":"int a = 4;\nint b = 9;\nboolean r = a * 2 > b - 2;\nSystem.out.println(r);","wrong":["false","Compile error","8 > 7"],"why":"Math first: 8 > 7, which is true. r stores the boolean result.","id":"2.2-1mel49g","answer":"true"},{"t":"trace","topic":"2.2","code":"String x = \"yes\";\nString y = new String(\"yes\");\nSystem.out.println(x == y);\nSystem.out.println(x.equals(y));","wrong":["true\ntrue","false\nfalse","true\nfalse"],"why":"new String makes a separate object, so == (same object?) is false. .equals compares the text, which matches.","id":"2.2-1yur96j","answer":"false\ntrue"},{"t":"mc","topic":"2.2","q":"What is the correct way to check if String name holds \"Sam\"?","answer":"name.equals(\"Sam\")","wrong":["name == \"Sam\"","name = \"Sam\"","name.compareTo(\"Sam\")"],"why":"== compares memory addresses and can fail even when the text matches. = is assignment. compareTo returns an int, not a boolean.","id":"2.2-1alk7lx"},{"t":"mc","topic":"2.2","q":"Why does if (x = 5) fail to compile in Java?","answer":"x = 5 is an assignment that produces an int, and if needs a boolean","wrong":["You cannot use numbers inside an if","It should be if (x := 5)","It compiles fine but always runs"],"why":"An if condition must be a boolean. = stores a value. == compares.","id":"2.2-73xwx8"},{"t":"trace","topic":"2.3","code":"int n = 15;\nif (n % 3 == 0) {\n    System.out.println(\"Fizz\");\n} else if (n % 5 == 0) {\n    System.out.println(\"Buzz\");\n} else {\n    System.out.println(n);\n}","wrong":["Fizz\nBuzz","Buzz","FizzBuzz"],"why":"In an else-if chain only the first true branch runs. 15 % 3 == 0 is true, so Fizz prints and the rest is skipped, even though 15 % 5 == 0 is also true.","id":"2.3-1rmx745","answer":"Fizz"},{"t":"trace","topic":"2.3","code":"int n = 15;\nif (n % 3 == 0) {\n    System.out.println(\"Fizz\");\n}\nif (n % 5 == 0) {\n    System.out.println(\"Buzz\");\n}","wrong":["Fizz","Buzz","FizzBuzz"],"why":"Two separate ifs: each one is checked on its own. Both conditions are true, so both print (on separate lines).","id":"2.3-2xrjhb","answer":"Fizz\nBuzz"},{"t":"trace","topic":"2.3","code":"int temp = 50;\nif (temp > 60) {\n    System.out.println(\"warm\");\n}\nSystem.out.println(\"done\");","wrong":["warm\ndone","warm","Nothing is printed"],"why":"50 > 60 is false, so the body is skipped. Code after the closing brace always runs.","id":"2.3-1qxp8sl","answer":"done"},{"t":"trace","topic":"2.3","code":"int x = 3;\nif (x > 5);\n{\n    System.out.println(\"big\");\n}\nSystem.out.println(\"end\");","wrong":["end","Compile error","big"],"why":"Sneaky: the semicolon right after if (x > 5) IS the if's whole body (an empty statement). The braces below are just a normal block that always runs.","id":"2.3-1pzn5wx","answer":"big\nend"},{"t":"trace","topic":"2.3","code":"int grade = 79;\nString letter = \"F\";\nif (grade >= 90) {\n    letter = \"A\";\n} else if (grade >= 80) {\n    letter = \"B\";\n} else if (grade >= 70) {\n    letter = \"C\";\n}\nSystem.out.println(letter);","wrong":["B","F","A"],"why":"79 fails >= 90 and >= 80, then passes >= 70. letter becomes C.","id":"2.3-493yw5","answer":"C"},{"t":"bug","topic":"2.3","task":"Should print \"teen\" for ages 13 to 19. With age = 13 it prints \"child\".","code":"int age = 13;\nif (age >= 20) {\n    System.out.println(\"adult\");\n} else if (age > 13) {\n    System.out.println(\"teen\");\n} else {\n    System.out.println(\"child\");\n}","bug":4,"fix":"} else if (age >= 13) {","expect":"teen","why":"Boundary bug: 13 > 13 is false, so a 13-year-old falls through to child. Use >= 13 to include 13.","id":"2.3-6grg2x","fixed":"int age = 13;\nif (age >= 20) {\n    System.out.println(\"adult\");\n} else if (age >= 13) {\n    System.out.println(\"teen\");\n} else {\n    System.out.println(\"child\");\n}","bugOut":"child"},{"t":"fill","topic":"2.3","task":"Print \"even\" when n is even, otherwise \"odd\". With n = 8 it should print even.","code":"int n = 8;\nif (____) {\n    System.out.println(\"even\");\n} else {\n    System.out.println(\"odd\");\n}","opts":["n % 2 == 0","n / 2 == 0","n % 2 != 0","n % 2 = 0"],"expect":"even","why":"Even numbers have remainder 0 when divided by 2. n / 2 == 0 is only true for 0 and 1. n % 2 = 0 is assignment and does not compile.","id":"2.3-1dyyx87","optOut":["even","odd","odd","Compile error"]},{"t":"trace","topic":"2.4","code":"int x = 12;\nint y = 3;\nif (x > 10) {\n    if (y > 5) {\n        System.out.println(\"A\");\n    } else {\n        System.out.println(\"B\");\n    }\n} else {\n    System.out.println(\"C\");\n}","wrong":["A","C","B\nC"],"why":"Outer: 12 > 10 is true, go inside. Inner: 3 > 5 is false, so the inner else prints B. The outer else is skipped.","id":"2.4-qzkqse","answer":"B"},{"t":"trace","topic":"2.4","code":"int x = 4;\nif (x > 5)\n    if (x > 2)\n        System.out.println(\"one\");\nelse\n    System.out.println(\"two\");\nSystem.out.println(\"three\");","wrong":["two\nthree","one\nthree","one\ntwo\nthree"],"why":"The else attaches to the closest if (x > 2), not to x > 5, no matter the indenting. x > 5 is false, so the whole nested part is skipped.","id":"2.4-1nam6cv","answer":"three"},{"t":"trace","topic":"2.4","code":"int a = 5;\nint b = 5;\nif (a >= b) {\n    if (a == b) {\n        System.out.print(\"tie \");\n    }\n    System.out.print(\"a wins \");\n}\nSystem.out.println(\"end\");","wrong":["tie end","a wins end","tie\na wins\nend"],"why":"Outer is true. Inner a == b is true so \"tie \" prints. \"a wins \" is inside the outer if but after the inner if, so it prints too. All on one line because of print.","id":"2.4-1r7ig5v","answer":"tie a wins end"},{"t":"trace","topic":"2.4","code":"int roll = 20;\nint armor = 5;\nint dmg = 0;\nif (roll >= armor * 3) {\n    dmg = 12;\n    if (roll >= 18) {\n        dmg *= 2;\n    }\n    dmg -= armor;\n}\nSystem.out.println(dmg);","wrong":["24","7","0"],"why":"20 >= 15 so it hits: dmg = 12. 20 >= 18 is a critical: 24. Then subtract armor: 19.","id":"2.4-55k36o","answer":"19"},{"t":"trace","topic":"2.5","code":"int a = 3;\nint b = 7;\nSystem.out.println(a > 2 && b < 5);\nSystem.out.println(a > 2 || b < 5);\nSystem.out.println(!(a == 3));","wrong":["true\ntrue\nfalse","false\nfalse\ntrue","false\ntrue\ntrue"],"why":"&& needs both: true && false = false. || needs one: true || false = true. a == 3 is true, ! flips it to false.","id":"2.5-1h2ks2z","answer":"false\ntrue\nfalse"},{"t":"trace","topic":"2.5","code":"System.out.println(true || false && false);\nSystem.out.println((true || false) && false);","wrong":["false\nfalse","true\ntrue","false\ntrue"],"why":"&& is done before ||, like × before +. So the first is true || (false && false) = true. Parentheses change it in the second: true && false = false.","id":"2.5-vb3c7f","answer":"true\nfalse"},{"t":"trace","topic":"2.5","code":"int x = 0;\nif (x != 0 && 10 / x > 1) {\n    System.out.println(\"yes\");\n} else {\n    System.out.println(\"no\");\n}","wrong":["yes","Crash: ArithmeticException","Compile error"],"why":"Short-circuit: x != 0 is false, so && stops right there and never computes 10 / x. No crash.","id":"2.5-1cu96t9","answer":"no"},{"t":"trace","topic":"2.5","code":"int x = 0;\nif (10 / x > 1 && x != 0) {\n    System.out.println(\"yes\");\n} else {\n    System.out.println(\"no\");\n}","wrong":["no","yes","Compile error"],"why":"Same parts, flipped order. Now 10 / x runs first and divides by zero, which crashes with ArithmeticException before the check is reached.","id":"2.5-iowr1p","answer":"Crash: ArithmeticException"},{"t":"fill","topic":"2.5","task":"valid should return true only for ages 13 to 19 inclusive, so this prints: false true true false","code":"public class Main {\n    public static boolean valid(int age) {\n        return ____;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(valid(12) + \" \" + valid(13) + \" \" + valid(19) + \" \" + valid(20));\n    }\n}","opts":["age >= 13 && age <= 19","age >= 13 || age <= 19","age > 13 && age < 19","13 <= age <= 19"],"expect":"false true true false","why":"Inside a range needs both conditions (&&), with >= and <= to include the ends. || accepts every age. > and < drop 13 and 19. Java cannot chain 13 <= age <= 19.","id":"2.5-1ex0v22","optOut":["false true true false","true true true true","false false false false","Compile error"]},{"t":"mc","topic":"2.5","q":"Which value of n makes (n > 10 || n % 2 == 0) false?","answer":"7","wrong":["12","4","15"],"why":"An || is false only when BOTH sides are false: n must be 10 or less AND odd. Only 7 fits.","id":"2.5-17mxf02"},{"t":"mc","topic":"2.6","q":"Which is equivalent to !(x > 4 && y < 2)?","answer":"x <= 4 || y >= 2","wrong":["x <= 4 && y >= 2","x < 4 || y > 2","!x > 4 && !y < 2"],"why":"De Morgan: flip each piece and swap && for ||. The opposite of > is <= (not <), and the opposite of < is >=.","id":"2.6-10z3d2n"},{"t":"mc","topic":"2.6","q":"Which is equivalent to !(a || b)?","answer":"!a && !b","wrong":["!a || !b","a && b","!a || b"],"why":"\"Not (a or b)\" means neither one is true: !a && !b.","id":"2.6-o9r62j"},{"t":"mc","topic":"2.6","q":"Which expression is equivalent to !(score < 60)?","answer":"score >= 60","wrong":["score > 60","score <= 60","score > 59.5 && score < 60"],"why":"The opposite of < includes the boundary: >=. Test score = 60: !(60 < 60) is true, and 60 >= 60 is true. 60 > 60 would be false, so that one does not match.","id":"2.6-updzd6"},{"t":"trace","topic":"2.6","code":"int x = 6;\nint y = 2;\nboolean p = !(x > 5 || y > 5);\nboolean q = x <= 5 && y <= 5;\nSystem.out.println(p + \" \" + q + \" \" + (p == q));","wrong":["true true true","false true false","true false false"],"why":"x > 5 is true, so the || is true and p = false. q: 6 <= 5 is false, so q = false. They match, which is De Morgan in action.","id":"2.6-k1ecdp","answer":"false false true"},{"t":"mc","topic":"2.6","q":"Two boolean expressions give the same result for 9 out of 10 test inputs. Are they equivalent?","answer":"No, they must match for every possible input","wrong":["Yes, 90% is close enough","Yes, if they use the same variables","Only if they are the same length"],"why":"Equivalent means interchangeable everywhere. One mismatch proves they are different.","id":"2.6-1ahjztj"},{"t":"trace","topic":"2.7","code":"int i = 0;\nwhile (i < 3) {\n    System.out.print(i + \" \");\n    i++;\n}\nSystem.out.println(\"| \" + i);","wrong":["0 1 2 3 | 3","1 2 3 | 3","0 1 2 | 2"],"why":"Prints 0, 1, 2. When i becomes 3, the condition fails and the loop ends, so i is 3 afterwards.","id":"2.7-16k4epg","answer":"0 1 2 | 3"},{"t":"trace","topic":"2.7","code":"int n = 50;\nint steps = 0;\nwhile (n > 1) {\n    n /= 2;\n    steps++;\n}\nSystem.out.println(steps + \" \" + n);","wrong":["6 1","5 0","25 1"],"why":"50 → 25 → 12 → 6 → 3 → 1. That is 5 halvings, then 1 > 1 is false.","id":"2.7-kv5a6n","answer":"5 1"},{"t":"trace","topic":"2.7","code":"int num = 905;\nint count = 0;\nwhile (num > 0) {\n    num /= 10;\n    count++;\n}\nSystem.out.println(count);","wrong":["2","905","4"],"why":"Each / 10 drops one digit: 905 → 90 → 9 → 0. Three passes, so it counts the digits.","id":"2.7-zw6qoa","answer":"3"},{"t":"trace","topic":"2.7","code":"int x = 10;\nwhile (x < 5) {\n    System.out.println(x);\n    x++;\n}\nSystem.out.println(\"after\");","wrong":["10\nafter","Runs forever","10\n11\n12\n13\n14\nafter"],"why":"The condition is checked before the first pass. 10 < 5 is false right away, so the body runs zero times.","id":"2.7-oakuew","answer":"after"},{"t":"trace","topic":"2.7","code":"int num = 352;\nint rev = 0;\nwhile (num > 0) {\n    rev = rev * 10 + num % 10;\n    num /= 10;\n}\nSystem.out.println(rev);","wrong":["352","10","2"],"why":"Each pass moves the last digit of num onto the end of rev: 2, then 25, then 253. It reverses the number.","id":"2.7-1q28l94","answer":"253"},{"t":"bug","topic":"2.7","task":"Should print 5 4 3 2 1 and stop.","code":"int n = 5;\nwhile (n > 0) {\n    System.out.print(n + \" \");\n    n++;\n}","bug":4,"fix":"    n--;","expect":"5 4 3 2 1","why":"n++ moves n away from 0, so n > 0 stays true until overflow. The update has to move toward ending the loop.","id":"2.7-65t5uj","fixed":"int n = 5;\nwhile (n > 0) {\n    System.out.print(n + \" \");\n    n--;\n}","bugOut":"Runs forever"},{"t":"fill","topic":"2.7","task":"Add up the digits of 4093 (should print 16).","code":"int num = 4093;\nint sum = 0;\nwhile (num > 0) {\n    sum += ____;\n    num /= 10;\n}\nSystem.out.println(sum);","opts":["num % 10","num / 10","num","num % 4093"],"expect":"16","why":"num % 10 is the last digit. Then num /= 10 drops it, so the next pass sees the next digit.","id":"2.7-ow9m8i","optOut":["16","453","4546","453"]},{"t":"trace","topic":"2.8","code":"for (int i = 2; i <= 10; i += 3) {\n    System.out.print(i + \" \");\n}","wrong":["2 5 8 11","2 4 6 8 10","3 6 9"],"why":"i = 2, 5, 8 all pass i <= 10. Then 11 fails, so it stops.","id":"2.8-1g1dup8","answer":"2 5 8"},{"t":"trace","topic":"2.8","code":"int total = 0;\nfor (int k = 5; k > 0; k--) {\n    total += k;\n}\nSystem.out.println(total);","wrong":["10","14","20"],"why":"5 + 4 + 3 + 2 + 1 = 15. When k reaches 0, k > 0 fails.","id":"2.8-jrx4bh","answer":"15"},{"t":"trace","topic":"2.8","code":"for (int i = 0; i < 6; i++) {\n    if (i % 2 == 1) {\n        System.out.print(i);\n    }\n}\nSystem.out.println();","wrong":["024","0246","12345"],"why":"Only odd i pass the if: 1, 3, 5. print keeps them on one line with no spaces.","id":"2.8-e2atvh","answer":"135"},{"t":"trace","topic":"2.8","code":"int x = 1;\nfor (int i = 1; i <= 4; i++) {\n    x *= 2;\n}\nSystem.out.println(x);","wrong":["8","32","4"],"why":"Four passes, doubling each time: 2, 4, 8, 16.","id":"2.8-3880m5","answer":"16"},{"t":"mc","topic":"2.8","q":"How many times does the body of this loop run?","code":"for (int i = 4; i <= 19; i++)","answer":"16","wrong":["15","19","17"],"why":"For i = a to b with <=, the count is b - a + 1 = 19 - 4 + 1 = 16.","id":"2.8-d2du8v"},{"t":"bug","topic":"2.8","task":"Should print 1 2 3 4 5.","code":"for (int i = 1; i < 5; i++) {\n    System.out.print(i + \" \");\n}","bug":1,"fix":"for (int i = 1; i <= 5; i++) {","expect":"1 2 3 4 5","why":"Off by one: i < 5 stops at 4. Use i <= 5 (or i < 6) to include 5.","id":"2.8-17w2ncz","fixed":"for (int i = 1; i <= 5; i++) {\n    System.out.print(i + \" \");\n}","bugOut":"1 2 3 4"},{"t":"fill","topic":"2.8","task":"Print the multiples of 5 up to 25: 5 10 15 20 25","code":"for (int i = 5; ____; i += 5) {\n    System.out.print(i + \" \");\n}","opts":["i <= 25","i < 25","i == 25","i <= 30"],"expect":"5 10 15 20 25","why":"i goes 5, 10, 15, 20, 25. i < 25 would stop before 25 and i <= 30 would include 30.","id":"2.8-tohbvr","optOut":["5 10 15 20 25","5 10 15 20","(nothing printed)","5 10 15 20 25 30"]},{"t":"mc","topic":"2.8","q":"Which while loop does exactly what this for loop does?","code":"for (int i = 0; i < 3; i++) {\n    System.out.print(i);\n}","answer":"int i = 0; while (i < 3) { System.out.print(i); i++; }","wrong":["int i = 0; while (i < 3) { i++; System.out.print(i); }","int i = 0; while (i <= 3) { System.out.print(i); i++; }","int i = 1; while (i < 3) { System.out.print(i); i++; }"],"why":"Init above the loop, same condition, body first, update last. Updating before printing would print 123 instead of 012.","id":"2.8-j8rtaq"},{"t":"trace","topic":"2.9","code":"int sum = 0;\nfor (int i = 1; i <= 10; i++) {\n    if (i % 2 == 0) {\n        sum += i;\n    }\n}\nSystem.out.println(sum);","wrong":["55","25","20"],"why":"Adds only the evens: 2 + 4 + 6 + 8 + 10 = 30.","id":"2.9-1yl70fw","answer":"30"},{"t":"trace","topic":"2.9","code":"int count = 0;\nfor (int n = 1; n <= 30; n++) {\n    if (n % 4 == 0 || n % 6 == 0) {\n        count++;\n    }\n}\nSystem.out.println(count);","wrong":["12","5","7"],"why":"Multiples of 4: 7 of them (4 to 28). Multiples of 6: 5 (6 to 30). Overlap (12, 24) counted once: 7 + 5 - 2 = 10.","id":"2.9-kcetsy","answer":"10"},{"t":"trace","topic":"2.9","code":"int product = 1;\nfor (int i = 1; i <= 5; i++) {\n    product *= i;\n}\nSystem.out.println(product);","wrong":["15","0","24"],"why":"1 × 2 × 3 × 4 × 5 = 120 (5 factorial). A product starts at 1, not 0, or everything would be 0.","id":"2.9-csp6vu","answer":"120"},{"t":"trace","topic":"2.9","code":"int min = Integer.MAX_VALUE;\nint a = 8, b = 3, c = 5;\nif (a < min) { min = a; }\nif (b < min) { min = b; }\nif (c < min) { min = c; }\nSystem.out.println(min);","wrong":["5","8","2147483647"],"why":"Starting at the largest int guarantees the first value replaces it. Then 3 beats 8, and 5 does not beat 3.","id":"2.9-1besy8c","answer":"3"},{"t":"bug","topic":"2.9","task":"Should print the product 1×2×3×4 = 24.","code":"int product = 0;\nfor (int i = 1; i <= 4; i++) {\n    product *= i;\n}\nSystem.out.println(product);","bug":1,"fix":"int product = 1;","expect":"24","why":"Anything times 0 is 0. A product accumulator must start at 1.","id":"2.9-gv98t","fixed":"int product = 1;\nfor (int i = 1; i <= 4; i++) {\n    product *= i;\n}\nSystem.out.println(product);","bugOut":"0"},{"t":"fill","topic":"2.9","task":"Count the numbers from 1 to 50 that are divisible by 7 (should print 7).","code":"int count = 0;\nfor (int n = 1; n <= 50; n++) {\n    if (____) {\n        count++;\n    }\n}\nSystem.out.println(count);","opts":["n % 7 == 0","n / 7 == 0","n % 7 == 1","n == 7"],"expect":"7","why":"Divisible by 7 means remainder 0. Those are 7, 14, ..., 49: seven numbers.","id":"2.9-1s4bol9","optOut":["7","6","8","1"]},{"t":"trace","topic":"2.9","code":"int n = 12;\nfor (int d = 1; d <= n; d++) {\n    if (n % d == 0) {\n        System.out.print(d + \" \");\n    }\n}\nSystem.out.println();","wrong":["2 3 4 6","1 2 3 4 6","12 6 4 3 2 1"],"why":"Prints every d that divides 12 evenly, from 1 up to 12 itself: all the factors.","id":"2.9-1eebasq","answer":"1 2 3 4 6 12"},{"t":"trace","topic":"2.10","code":"String s = \"loop\";\nString out = \"\";\nfor (int i = 0; i < s.length(); i++) {\n    out = s.substring(i, i + 1) + out;\n}\nSystem.out.println(out);","wrong":["loop","opol","p"],"why":"Each new letter goes in FRONT of what we have so far: l, ol, ool, pool. It reverses the word.","id":"2.10-uhr5jo","answer":"pool"},{"t":"trace","topic":"2.10","code":"String s = \"banana\";\nint count = 0;\nfor (int i = 0; i < s.length(); i++) {\n    if (s.substring(i, i + 1).equals(\"a\")) {\n        count++;\n    }\n}\nSystem.out.println(count);","wrong":["2","6","1"],"why":"Checks each letter: a appears at indexes 1, 3, 5. Three times.","id":"2.10-1k4nflf","answer":"3"},{"t":"trace","topic":"2.10","code":"String s = \"computer\";\nString result = \"\";\nfor (int i = 0; i < s.length(); i += 2) {\n    result += s.substring(i, i + 1);\n}\nSystem.out.println(result);","wrong":["optr","cmpt","computer"],"why":"i = 0, 2, 4, 6: letters c, m, u, e. Every other letter starting at 0.","id":"2.10-9i92zc","answer":"cmue"},{"t":"trace","topic":"2.10","code":"String s = \"hi\";\nfor (int i = 0; i <= s.length(); i++) {\n    System.out.print(s.substring(i, i + 1));\n}","wrong":["hi","h\ni","Crash: StringIndexOutOfBoundsException"],"why":"With <= the loop tries i = 2, and substring(2, 3) is past the end of \"hi\". It prints h and i, then crashes with StringIndexOutOfBoundsException.","id":"2.10-dor8i8","answer":"hi\nCrash: StringIndexOutOfBoundsException"},{"t":"trace","topic":"2.10","code":"String s = \"a,b,,c\";\nint pos = s.indexOf(\",\");\nint count = 0;\nwhile (pos >= 0) {\n    count++;\n    s = s.substring(pos + 1);\n    pos = s.indexOf(\",\");\n}\nSystem.out.println(count + \" \" + s);","wrong":["3 ,c","2 c","4 c"],"why":"Each pass removes everything up to and including the next comma. There are 3 commas, and the last chop leaves \"c\".","id":"2.10-1em9rm4","answer":"3 c"},{"t":"bug","topic":"2.10","task":"Should count the vowels in \"education\" (5).","code":"String word = \"education\";\nString vowels = \"aeiou\";\nint count = 0;\nfor (int i = 0; i < word.length(); i++) {\n    String ch = word.substring(i, i + 1);\n    if (vowels.indexOf(ch) > 0) {\n        count++;\n    }\n}\nSystem.out.println(count);","bug":6,"fix":"    if (vowels.indexOf(ch) >= 0) {","expect":"5","why":"indexOf returns 0 when the letter is \"a\" (it is at index 0 of \"aeiou\"). Not found is -1, so the test must be >= 0 (or != -1).","id":"2.10-rdkews","fixed":"String word = \"education\";\nString vowels = \"aeiou\";\nint count = 0;\nfor (int i = 0; i < word.length(); i++) {\n    String ch = word.substring(i, i + 1);\n    if (vowels.indexOf(ch) >= 0) {\n        count++;\n    }\n}\nSystem.out.println(count);","bugOut":"4"},{"t":"fill","topic":"2.10","task":"Print each letter of \"abc\" on its own line.","code":"String s = \"abc\";\nfor (int i = 0; i < s.length(); i++) {\n    System.out.println(____);\n}","opts":["s.substring(i, i + 1)","s.substring(i)","s.substring(i, i)","s.substring(0, i)"],"expect":"a\nb\nc","why":"substring(i, i + 1) is exactly one letter. substring(i) is everything from i on, and substring(i, i) is empty.","id":"2.10-45ezmt","optOut":["a\nb\nc","abc\nbc\nc","(nothing printed)","\na\nab"]},{"t":"trace","topic":"2.11","code":"for (int i = 1; i <= 2; i++) {\n    for (int j = 1; j <= 3; j++) {\n        System.out.print(i * j + \" \");\n    }\n    System.out.println();\n}","wrong":["1 2 3 2 4 6","1 2\n2 4\n3 6","1 1 1\n2 2 2"],"why":"For i = 1, j runs 1 to 3: 1 2 3. New line. For i = 2: 2 4 6.","id":"2.11-13ycsu","answer":"1 2 3\n2 4 6"},{"t":"trace","topic":"2.11","code":"for (int i = 3; i >= 1; i--) {\n    for (int j = 0; j < i; j++) {\n        System.out.print(\"#\");\n    }\n    System.out.println();\n}","wrong":["#\n##\n###","###\n###\n###","###\n##"],"why":"Inner loop runs i times. i goes 3, 2, 1, so rows have 3, 2, 1 #s.","id":"2.11-jq4d9y","answer":"###\n##\n#"},{"t":"trace","topic":"2.11","code":"int count = 0;\nfor (int i = 0; i < 4; i++) {\n    for (int j = i; j < 4; j++) {\n        count++;\n    }\n}\nSystem.out.println(count);","wrong":["16","4","6"],"why":"j starts at i each time: i = 0 → 4 passes, i = 1 → 3, i = 2 → 2, i = 3 → 1. 4 + 3 + 2 + 1 = 10.","id":"2.11-1y6lub9","answer":"10"},{"t":"trace","topic":"2.11","code":"for (int r = 1; r <= 3; r++) {\n    String line = \"\";\n    for (int c = 1; c <= r; c++) {\n        line += c;\n    }\n    System.out.println(line);\n}","wrong":["1\n2\n3","123\n123\n123","1\n12"],"why":"line resets to \"\" every row. Row r builds 1..r: \"1\", \"12\", \"123\".","id":"2.11-178suvj","answer":"1\n12\n123"},{"t":"fill","topic":"2.11","task":"Print a 2-row by 4-column rectangle of *.","code":"for (int row = 0; row < 2; row++) {\n    for (int col = 0; col < 4; col++) {\n        System.out.print(\"*\");\n    }\n    ____\n}","opts":["System.out.println();","System.out.print(\"*\");","row++;","col = 0;"],"expect":"****\n****","why":"After the inner loop finishes a row, println() moves to the next line. Without it, all 8 stars would be on one line.","id":"2.11-8zktaj","optOut":["****\n****","**********","****","Compile error"]},{"t":"mc","topic":"2.12","q":"How many times does count++ execute?","code":"for (int i = 0; i < 5; i++) {\n    for (int j = 0; j < 3; j++) {\n        count++;\n    }\n}","answer":"15","wrong":["8","5","18"],"why":"The inner loop runs 3 times for each of the 5 outer passes: 5 × 3 = 15.","id":"2.12-6sbgs9"},{"t":"mc","topic":"2.12","q":"How many times does the body run?","code":"for (int k = 1; k < 64; k *= 2)","answer":"6","wrong":["64","32","7"],"why":"k = 1, 2, 4, 8, 16, 32. Next would be 64, which fails k < 64. Six passes.","id":"2.12-2y2djt"},{"t":"mc","topic":"2.12","q":"How many times does x++ execute?","code":"for (int i = 1; i <= 5; i++) {\n    for (int j = 1; j <= i; j++) {\n        x++;\n    }\n}","answer":"15","wrong":["25","5","10"],"why":"Row i runs i times: 1 + 2 + 3 + 4 + 5 = 15.","id":"2.12-ofcfcd"},{"t":"mc","topic":"2.12","q":"How many times does the body run?","code":"for (int i = 10; i > 0; i -= 3)","answer":"4","wrong":["3","10","5"],"why":"i = 10, 7, 4, 1 all pass i > 0. Next is -2, which fails. Four passes.","id":"2.12-14c5973"},{"t":"mc","topic":"2.12","q":"How many times is the condition i < 4 checked in total?","code":"for (int i = 0; i < 4; i++)","answer":"5","wrong":["4","3","1"],"why":"It is checked before each of the 4 passes, plus once more when i = 4 and it finally fails. Loop runs n times, condition checks n + 1 times.","id":"2.12-77ks25"}],"presets":[{"name":"Digit sum (while)","code":"int num = 4721;\nint sum = 0;\nwhile (num > 0) {\n    sum += num % 10;\n    num /= 10;\n}\nSystem.out.println(sum);"},{"name":"FizzBuzz 1 to 15","code":"for (int i = 1; i <= 15; i++) {\n    if (i % 3 == 0 && i % 5 == 0) {\n        System.out.println(\"FizzBuzz\");\n    } else if (i % 3 == 0) {\n        System.out.println(\"Fizz\");\n    } else if (i % 5 == 0) {\n        System.out.println(\"Buzz\");\n    } else {\n        System.out.println(i);\n    }\n}"},{"name":"Reverse a word","code":"String s = \"racecar\";\nString rev = \"\";\nfor (int i = 0; i < s.length(); i++) {\n    rev = s.substring(i, i + 1) + rev;\n}\nSystem.out.println(rev);\nSystem.out.println(rev.equals(s));"},{"name":"Methods and return","code":"public class Main {\n    public static int max(int a, int b) {\n        if (a > b) {\n            return a;\n        }\n        return b;\n    }\n\n    public static void main(String[] args) {\n        int best = max(4, 9);\n        best = max(best, 7);\n        System.out.println(best);\n    }\n}"},{"name":"Star triangle (nested)","code":"for (int i = 1; i <= 4; i++) {\n    for (int j = 1; j <= i; j++) {\n        System.out.print(\"*\");\n    }\n    System.out.println();\n}"},{"name":"Blank","code":"int x = 5;\nSystem.out.println(x);"}]};
+</script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const TOPICS = DATA.topics, QS = DATA.questions, PRESETS = DATA.presets;
+const byTopic = id => TOPICS.find(t => t.id === id);
+const NOTES = new Set(['1.3', '1.4', '1.5', '1.6', '1.9', '1.11', '1.12', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '2.9']);
+const UNITS = { 1: 'Unit 1: Using objects and methods', 2: 'Unit 2: Selection and iteration' };
+const KIND = { trace: 'Trace the code', bug: 'Bug hunt', fill: 'Fill the blank', mc: 'Concept check' };
+const VERSION = 'v1.0';
+
+/* ---------- saved progress ---------- */
+const KEY = 'chronicle-csa-v1';
+let S = { q: {}, read: {}, draft: null };
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const DAY = 864e5, GAPS = [1, 3, 7, 14];
+function grade(id, ok) {
+  const r = S.q[id] || { s: 0, n: 0, w: 0, due: null };
+  r.n++;
+  if (!ok) { r.s = 0; r.w++; r.due = Date.now(); }
+  else { r.s++; r.due = r.w > 0 && r.s <= GAPS.length ? Date.now() + GAPS[r.s - 1] * DAY : null; }
+  S.q[id] = r; save();
+}
+const isDue = q => { const r = S.q[q.id]; return !!(r && r.due && r.due <= Date.now()); };
+const strength = q => { const r = S.q[q.id]; if (!r) return 0; if (isDue(q)) return 0.15; if (r.s >= 2) return 1; if (r.s === 1) return r.w ? 0.55 : 0.7; return 0.15; };
+const topicQs = id => QS.filter(q => q.topic === id);
+const topicPct = id => { const qs = topicQs(id); return qs.length ? qs.reduce((a, q) => a + strength(q), 0) / qs.length : 0; };
+const dueList = () => QS.filter(isDue);
+const solid = () => QS.filter(q => strength(q) >= 0.7).length;
+
+/* ---------- syntax highlight ---------- */
+const KW = new Set('public private static void class new return if else while for break continue final true false null'.split(' '));
+const TY = new Set(['int', 'double', 'boolean', 'String', 'Math', 'System', 'Integer']);
+function hl(line) {
+  return line.replace(/(____)|(\/\/.*$)|("(?:[^"\\]|\\.)*")|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)(?=(\s*\())?|([^"\w/]+|\/)/g, (m, bl, com, str, num, id, call, other) => {
+    if (bl) return '<span class="blank">?</span>';
+    if (com) return '<span class="c">' + esc(com) + '</span>';
+    if (str) return '<span class="s">' + esc(str) + '</span>';
+    if (num) return '<span class="n">' + num + '</span>';
+    if (id) { if (KW.has(id)) return '<span class="k">' + id + '</span>'; if (TY.has(id)) return '<span class="ty">' + id + '</span>'; if (call) return '<span class="f">' + id + '</span>'; return id; }
+    return esc(m);
+  });
+}
+function codeHTML(code, o = {}) {
+  return '<div class="code">' + code.split('\n').map((l, i) => {
+    const n = i + 1, tag = o.pick ? 'button' : 'div';
+    return `<${tag} class="ln${o.pick ? ' pick' : ''}" data-ln="${n}"${o.pick ? ' type="button" aria-label="Line ' + n + '"' : ''}><span class="g">${n}</span><span class="t">${hl(l) || ' '}</span></${tag}>`;
+  }).join('') + '</div>';
+}
+
+/* ---------- debugger ---------- */
+const IC = {
+  reset: '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M4 3v12M14 4 7 9l7 5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  back: '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M12 4 5 9l7 5z" fill="currentColor"/></svg>',
+  step: '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M6 4l7 5-7 5z" fill="currentColor"/></svg>',
+  end: '<svg width="18" height="18" viewBox="0 0 18 18"><path d="M14 3v12M4 4l7 5-7 5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+};
+function seeded(n) { let s = n; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+
+function mountDebugger(host, code) {
+  const r = JavaEngine.run(code, { random: seeded(11) });
+  const steps = [{ line: null, note: 'Ready. Press Step (or the right arrow key) to run the first line.', out: '', frames: [{ name: 'main', vars: [] }], changed: null }].concat(r.steps);
+  if (r.error && r.error.kind === 'compile') {
+    host.innerHTML = `<div class="dbg"><div class="dbg-body"><div>${codeHTML(code)}</div><div class="dbg-side"><div class="note err"><b>Compile error on line ${r.error.line || '?'}</b>${esc(r.error.msg)}<br>Java refuses to run any of the program until this is fixed.</div></div></div></div>`;
+    const ln = host.querySelector(`.ln[data-ln="${r.error.line}"]`); if (ln) ln.classList.add('errl');
+    return;
+  }
+  host.innerHTML = `<div class="dbg" tabindex="0" aria-label="Debugger. Use left and right arrow keys to step.">
+    <div class="dbg-bar">
+      <button class="ib" data-a="reset" aria-label="Back to start" title="Back to start">${IC.reset}</button>
+      <button class="ib" data-a="back" aria-label="Step back" title="Step back">${IC.back}</button>
+      <button class="ib go" data-a="step" aria-label="Step forward">${IC.step}Step</button>
+      <button class="ib" data-a="end" aria-label="Run to the end" title="Run to the end">${IC.end}</button>
+      <span class="stepn"></span>
+      <input type="range" min="0" max="${steps.length - 1}" value="0" aria-label="Step slider">
+    </div>
+    <div class="dbg-body">
+      <div>${codeHTML(code)}</div>
+      <div class="dbg-side">
+        <div class="note"></div>
+        <div class="vars"><h5>Variables</h5><div class="vlist"></div></div>
+        <div class="con"><h5>Console output</h5><pre></pre></div>
+      </div>
+    </div></div>`;
+  const D = host.querySelector('.dbg'), pane = D.querySelector('.code'), lines = [...D.querySelectorAll('.ln')];
+  const note = D.querySelector('.note'), vl = D.querySelector('.vlist'), pre = D.querySelector('pre'), sn = D.querySelector('.stepn'), rg = D.querySelector('input');
+  let i = 0;
+  function show() {
+    const st = steps[i];
+    lines.forEach(l => l.classList.remove('cur', 'errl'));
+    const ln = st.line ? lines[st.line - 1] : null;
+    if (ln) {
+      ln.classList.add(st.err ? 'errl' : 'cur');
+      const top = ln.offsetTop - pane.offsetTop;
+      if (top < pane.scrollTop + 10 || top > pane.scrollTop + pane.clientHeight - 40) pane.scrollTop = Math.max(0, top - pane.clientHeight / 2);
+    }
+    note.className = 'note' + (st.err ? ' err' : '');
+    const head = st.end ? (st.err ? 'Stopped' : 'Done') : i === 0 ? 'Start' : 'Line ' + st.line + ' just ran';
+    note.innerHTML = '<b>' + head + '</b>' + esc(st.note);
+    const fr = st.frames || [];
+    vl.innerHTML = fr.length ? fr.map((f, k) => `<div class="frame${k === fr.length - 1 ? ' live' : ''}">${fr.length > 1 ? '<div class="fn">' + esc(f.name) + '()' + (k === fr.length - 1 ? ' : running now' : ' : waiting') + '</div>' : ''}${f.vars.length ? f.vars.map(v => `<div class="box${k === fr.length - 1 && st.changed && st.changed.includes(v.n) ? ' chg' : ''}"><span class="vt">${esc(v.ty)}</span><span>${esc(v.n)}</span><span class="vv">${esc(v.val)}</span></div>`).join('') : '<div class="empty">No variables yet</div>'}</div>`).join('') : '<div class="empty">Program over, variables are gone</div>';
+    pre.innerHTML = esc(st.out) + (st.err ? '<span class="er">' + esc(st.note) + '</span>' : '');
+    pre.scrollTop = pre.scrollHeight;
+    sn.textContent = 'Step ' + i + ' / ' + (steps.length - 1);
+    rg.value = i;
+    D.querySelector('[data-a=back]').disabled = D.querySelector('[data-a=reset]').disabled = i === 0;
+    D.querySelector('[data-a=step]').disabled = D.querySelector('[data-a=end]').disabled = i === steps.length - 1;
+  }
+  const go = n => { i = Math.max(0, Math.min(steps.length - 1, n)); show(); };
+  D.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    go(a === 'reset' ? 0 : a === 'back' ? i - 1 : a === 'step' ? i + 1 : steps.length - 1);
+  });
+  rg.addEventListener('input', () => go(+rg.value));
+  D.addEventListener('keydown', e => {
+    if (e.target === rg) return;
+    if (e.key === 'ArrowRight') { go(i + 1); e.preventDefault(); }
+    if (e.key === 'ArrowLeft') { go(i - 1); e.preventDefault(); }
+  });
+  show();
+}
+function quickRun(code) {
+  const r = JavaEngine.run(code, { record: false, random: seeded(11) });
+  if (r.error && r.error.kind === 'compile') return { text: 'Compile error: ' + r.error.msg + (r.error.line ? ' (line ' + r.error.line + ')' : ''), bad: true };
+  return { text: r.out + (r.error ? (r.error.kind === 'Timeout' ? r.error.msg : 'Crash! ' + r.error.kind + ': ' + r.error.msg) : ''), bad: !!r.error };
+}
+
+/* ---------- sidebar, status ---------- */
+const ring = p => { const c = 2 * Math.PI * 6; return `<svg class="ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="8" cy="8" r="6" fill="none" stroke="var(--ok)" stroke-width="3" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 8 8)"/></svg>`; };
+const hid = id => 'learn-' + id.replace('.', '-');
+function renderTree(route) {
+  const due = dueList().length;
+  const link = (href, label, extra = '', cls = '') => `<a href="#${href}" class="${cls}${route === href ? ' on' : ''}">${label}${extra}</a>`;
+  let h = link('home', 'Home');
+  h += '<h4>Learn</h4>';
+  for (const u of [1, 2]) {
+    h += `<div class="folder"><svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1H6l1.5 2h6A1.5 1.5 0 0 1 15 4.5v7A1.5 1.5 0 0 1 13.5 13h-11A1.5 1.5 0 0 1 1 11.5z" fill="var(--curmark)"/></svg>${UNITS[u]}</div>`;
+    h += TOPICS.filter(t => t.unit === u).map(t => link(hid(t.id), ring(topicPct(t.id)) + esc(t.file), `<span class="num">${t.id}</span>`, 'file')).join('');
+  }
+  h += '<h4>Practice</h4>';
+  h += link('practice', 'Practice session');
+  h += link('review', 'Review pile', due ? `<span class="badge">${due}</span>` : '');
+  h += link('playground', 'Playground');
+  $('#tree').innerHTML = h;
+  $('#status').innerHTML = `<span class="hide-s">Units 1 and 2</span><span>${solid()}/${QS.length} solid</span><span>${due} due for review</span><span class="sp"></span><span class="hide-s">Answers verified with real Java</span><span>${VERSION}</span>`;
+}
+
+/* ---------- views ---------- */
+const DEMO = TOPICS.find(t => t.id === '2.7').cards[2].code;
+function nextTopic() {
+  const order = TOPICS.filter(t => t.unit === 2).concat(TOPICS.filter(t => t.unit === 1));
+  return order.find(t => !S.read[t.id]) || order.reduce((a, t) => topicPct(t.id) < topicPct(a.id) ? t : a, order[0]);
+}
+function viewHome() {
+  const due = dueList().length, nt = nextTopic();
+  const prog = [1, 2].map(u => `<div class="prog" style="margin-bottom:16px"><h3>${UNITS[u]}</h3>${TOPICS.filter(t => t.unit === u).map(t => { const p = topicPct(t.id); return `<a class="pr" href="#${hid(t.id)}"><span class="id">${t.id}</span><span>${esc(t.title)}</span><span class="bar" title="${Math.round(p * 100)}%"><i style="width:${Math.round(p * 100)}%"></i></span></a>`; }).join('')}</div>`).join('');
+  $('#view').innerHTML = `
+    <h1>Watch Java run, one line at a time</h1>
+    <p class="lede">Every lesson's code steps through here so you can see each variable change. Every practice answer was checked against real Java.</p>
+    <div class="home">
+      <div>
+        <h2>Try it: a while loop adding up digits</h2>
+        <p style="margin:0 0 4px;color:var(--muted)">Press Step and watch <code>num</code> lose a digit each pass while <code>sum</code> grows.</p>
+        <div id="demo"></div>
+      </div>
+      <div>
+        ${due ? `<div class="next"><h3>${due} question${due === 1 ? '' : 's'} due for review</h3><p>Ones you missed come back until you get them right a few times in a row.</p><a class="btn pri" href="#review">Start review</a></div>` : ''}
+        <div class="next"><h3>Next up: ${nt.id} ${esc(nt.title)}</h3><p>${S.read[nt.id] ? 'Your weakest topic right now.' : 'You have not opened this lesson yet.'} ${topicQs(nt.id).length} practice questions.</p><div class="row"><a class="btn ${due ? '' : 'pri'}" href="#${hid(nt.id)}">Open lesson</a><button class="btn" id="mixed">Mixed practice</button></div></div>
+        ${prog}
+      </div>
+    </div>`;
+  mountDebugger($('#demo'), DEMO);
+  $('#mixed').onclick = () => startSession({ mode: 'all', unit: 0, topic: '' });
+}
+
+function viewLearn(id) {
+  const t = byTopic(id); if (!t) return viewHome();
+  S.read[id] = 1; save();
+  const idx = TOPICS.indexOf(t), nx = TOPICS[idx + 1], n = topicQs(id).length;
+  $('#view').innerHTML = `
+    <span class="src">${NOTES.has(id) ? 'Matches your AP CSA notes' : 'Course topic, not in your notes yet'}</span>
+    <h1>${t.id} ${esc(t.title)}</h1>
+    <p class="lede">${t.cards.length} short cards. Press Step through on any example to watch it run. Then practice: ${n} questions.</p>
+    ${t.cards.map((c, k) => `<section class="card">
+      <h2>${esc(c.h)}</h2><p>${c.p}</p>
+      ${c.trap ? `<div class="trap"><b>Trap:</b>${esc(c.trap)}</div>` : ''}
+      ${c.code ? `<div class="cbox" id="cb${k}">${codeHTML(c.code)}</div>
+      <div class="codehead"><button class="btn" data-run="${k}">Run</button><button class="btn pri" data-dbg="${k}">Step through</button></div><div id="ro${k}"></div>` : ''}
+    </section>`).join('')}
+    <div class="row" style="border-top:1px solid var(--line);padding-top:24px">
+      <button class="btn pri" id="prac">Practice ${t.id} (${n} questions)</button>
+      ${nx ? `<a class="btn" href="#${hid(nx.id)}">Next: ${nx.id} ${esc(nx.title)}</a>` : ''}
+    </div>`;
+  $('#prac').onclick = () => startSession({ mode: 'all', unit: 0, topic: id });
+  $('#view').querySelectorAll('[data-dbg]').forEach(b => b.onclick = () => {
+    const k = b.dataset.dbg, box = $('#cb' + k);
+    if (b.dataset.on) { box.innerHTML = codeHTML(t.cards[k].code); b.textContent = 'Step through'; delete b.dataset.on; return; }
+    mountDebugger(box, t.cards[k].code); b.textContent = 'Hide debugger'; b.dataset.on = 1; $('#ro' + k).innerHTML = '';
+    const d = box.querySelector('.dbg'); if (d) d.focus({ preventScroll: true });
+  });
+  $('#view').querySelectorAll('[data-run]').forEach(b => b.onclick = () => {
+    const k = b.dataset.run, r = quickRun(t.cards[k].code);
+    $('#ro' + k).innerHTML = `<div class="con" style="padding:10px 0 0"><pre>${esc(r.text)}</pre></div>`;
+  });
+}
+
+/* ---------- practice ---------- */
+let P = null;
+let setup = { mode: 'all', unit: 0, topic: '' };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function pool(cfg) { return QS.filter(q => (cfg.mode === 'all' || q.t === cfg.mode) && (!cfg.unit || byTopic(q.topic).unit === cfg.unit) && (!cfg.topic || q.topic === cfg.topic)); }
+function startSession(cfg, list, title) {
+  setup = cfg;
+  let qs = list;
+  if (!qs) { const pl = shuffle(pool(cfg)); pl.sort((a, b) => strength(a) - strength(b)); qs = pl.slice(0, cfg.topic ? 12 : 10); qs = shuffle(qs); }
+  P = { qs: qs.map(q => q.id), i: 0, res: [], answered: false, title: title || (cfg.topic ? cfg.topic + ' ' + byTopic(cfg.topic).title : cfg.mode === 'all' ? 'Mixed practice' : KIND[cfg.mode]), review: !!list };
+  const target = P.review ? 'review' : 'practice';
+  if (location.hash.slice(1) !== target) location.hash = target; else route();
+}
+function viewPracticeSetup() {
+  const chip = (grp, v, label) => `<button class="chip${String(setup[grp]) === String(v) ? ' on' : ''}" data-g="${grp}" data-v="${v}">${label}</button>`;
+  const n = pool(setup).length;
+  $('#view').innerHTML = `<h1>Practice</h1><p class="lede">Ten questions at a time, weakest first. Missed ones go to your review pile.</p>
+    <h3>Question type</h3><div class="chips">${chip('mode', 'all', 'Mixed')}${chip('mode', 'trace', 'Trace the code')}${chip('mode', 'bug', 'Bug hunt')}${chip('mode', 'fill', 'Fill the blank')}${chip('mode', 'mc', 'Concept check')}</div>
+    <h3>Unit</h3><div class="chips">${chip('unit', 0, 'Both')}${chip('unit', 1, 'Unit 1')}${chip('unit', 2, 'Unit 2')}</div>
+    <h3>Topic</h3><div class="chips"><select id="tsel" aria-label="Topic"><option value="">All topics</option>${TOPICS.filter(t => !setup.unit || t.unit === setup.unit).map(t => `<option value="${t.id}"${setup.topic === t.id ? ' selected' : ''}>${t.id} ${esc(t.title)}</option>`).join('')}</select></div>
+    <div class="row" style="margin-top:10px"><button class="btn pri" id="go"${n ? '' : ' disabled'}>Start (${Math.min(n, setup.topic ? 12 : 10)} of ${n})</button></div>`;
+  $('#view').querySelectorAll('.chip').forEach(c => c.onclick = () => { const g = c.dataset.g; setup[g] = g === 'unit' ? +c.dataset.v : c.dataset.v; if (g === 'unit' && setup.topic && setup.unit && byTopic(setup.topic).unit !== setup.unit) setup.topic = ''; viewPracticeSetup(); });
+  $('#tsel').onchange = e => { setup.topic = e.target.value; viewPracticeSetup(); };
+  $('#go').onclick = () => startSession({ ...setup });
+}
+function optBody(q, o) {
+  if (q.t === 'trace') {
+    const lines = o.split('\n');
+    return '<pre>' + lines.map(l => /^Crash: |^Compile error$|^Runs forever$/.test(l) ? '<span class="crash">' + esc(l) + '</span>' : esc(l)).join('\n') + '</pre>';
+  }
+  if (q.t === 'fill') return '<pre>' + hl(o) + '</pre>';
+  return /[;(){}=<>!]/.test(o) && o.length < 80 ? '<pre>' + hl(o) + '</pre>' : '<span>' + esc(o) + '</span>';
+}
+function viewQuestion() {
+  if (P.i >= P.qs.length) return viewDone();
+  const q = QS.find(x => x.id === P.qs[P.i]), t = byTopic(q.topic);
+  P.answered = false;
+  const dots = P.qs.map((_, k) => `<i class="${k < P.res.length ? (P.res[k] ? 'ok' : 'bad') : k === P.i ? 'now' : ''}"></i>`).join('');
+  let body = '';
+  if (q.t === 'trace') body = `<p class="prompt">What does this print?</p>${codeHTML(q.code)}`;
+  if (q.t === 'fill') body = `<p class="task">${esc(q.task)}</p><p class="prompt">Which code goes in the blank?</p>${codeHTML(q.code)}`;
+  if (q.t === 'bug') body = `<p class="task">${esc(q.task)}</p><p class="prompt">Click the line with the bug.</p>${codeHTML(q.code, { pick: true })}`;
+  if (q.t === 'mc') body = `<p class="prompt">${esc(q.q)}</p>${q.code ? codeHTML(q.code) : ''}`;
+  let opts = [];
+  if (q.t === 'trace' || q.t === 'mc') opts = shuffle([q.answer, ...q.wrong]);
+  if (q.t === 'fill') opts = shuffle(q.opts);
+  const correct = q.t === 'fill' ? q.opts[0] : q.answer;
+  const wide = opts.some(o => o.length > 34 && q.t !== 'trace');
+  $('#view').innerHTML = `<div class="qhead"><span class="kind">${KIND[q.t]}</span><span>${esc(q.topic + ' ' + t.title)}</span>${P.title !== KIND[q.t] ? '<span>' + esc(P.title) + '</span>' : ''}<span class="dots" aria-label="Question ${P.i + 1} of ${P.qs.length}">${dots}</span></div>
+    ${body}
+    ${opts.length ? `<div class="opts" style="${wide ? 'grid-template-columns:minmax(0,1fr)' : ''}">${opts.map((o, k) => `<button class="opt" data-k="${k}"><span class="L">${'ABCD'[k]}</span>${optBody(q, o)}</button>`).join('')}</div>` : ''}
+    <div id="fb"></div>`;
+  const view = $('#view');
+  view.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    if (P.answered) return;
+    const pickO = opts[+b.dataset.k], ok = pickO === correct;
+    view.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (opts[+x.dataset.k] === correct) x.classList.add('right'); });
+    if (!ok) b.classList.add('wrong');
+    answer(q, ok);
+  });
+  view.querySelectorAll('.ln.pick').forEach(b => b.onclick = () => {
+    if (P.answered) return;
+    const n = +b.dataset.ln, ok = n === q.bug;
+    view.querySelectorAll('.ln.pick').forEach(x => { x.disabled = true; x.classList.remove('pick'); });
+    view.querySelector(`.ln[data-ln="${q.bug}"]`).classList.add('right');
+    if (!ok) b.classList.add('wrong');
+    answer(q, ok);
+  });
+}
+function answer(q, ok) {
+  P.answered = true; P.res.push(ok); grade(q.id, ok); renderTree(location.hash.slice(1));
+  const dot = document.querySelectorAll('.dots i')[P.res.length - 1]; if (dot) dot.className = ok ? 'ok' : 'bad';
+  const more = q.t === 'bug' ? `<p>Line ${q.bug} should be: <code>${esc(q.fix.trim())}</code><br>The buggy version printed: <code>${esc(q.bugOut)}</code></p>` : '';
+  const watch = q.t === 'trace' ? q.code : q.t === 'fill' ? q.code.replace('____', q.opts[0]) : q.t === 'bug' ? q.fixed : null;
+  $('#fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'bad'}"><h4>${ok ? 'Correct' : 'Not quite'}</h4><p>${esc(q.why)}</p>${more}
+    <div class="row">${q.t === 'bug' ? '<button class="btn" id="wb">Watch the buggy version</button>' : ''}${watch ? `<button class="btn" id="ww">${q.t === 'bug' ? 'Watch the fixed version' : 'Step through it'}</button>` : ''}<button class="btn pri" id="nx">${P.i + 1 < P.qs.length ? 'Next question' : 'See results'}</button></div><div id="wv"></div></div>`;
+  if (watch) $('#ww').onclick = () => { mountDebugger($('#wv'), watch); };
+  if (q.t === 'bug') $('#wb').onclick = () => { mountDebugger($('#wv'), q.code); };
+  $('#nx').onclick = () => { P.i++; viewQuestion(); $('#main').scrollTop = 0; };
+  $('#nx').focus({ preventScroll: true });
+}
+function viewDone() {
+  const right = P.res.filter(Boolean).length, missed = P.qs.map(id => QS.find(q => q.id === id)).filter((q, k) => !P.res[k]);
+  $('#view').innerHTML = `<h1>${esc(P.title)}: done</h1>
+    <div class="row" style="gap:18px;margin:10px 0 18px"><div class="score">${right}/${P.qs.length}</div><p style="margin:0;color:var(--muted);max-width:40ch">${right === P.qs.length ? 'Clean sweep.' : missed.length + ' went to your review pile. They come back until you get them right a few times in a row.'}</p></div>
+    <div class="row"><button class="btn pri" id="again">${P.review ? 'Review more' : 'Another round'}</button><a class="btn" href="#review">Review pile (${dueList().length})</a><a class="btn" href="#home">Home</a></div>
+    ${missed.length ? '<h2 style="margin-top:28px">What you missed</h2>' + missed.map(q => `<div class="miss"><b>${esc(q.topic)} ${KIND[q.t]}:</b> ${esc(q.q || q.task || 'What does this print?')}<br><span style="color:var(--muted)">${esc(q.why)}</span></div>`).join('') : ''}`;
+  $('#again').onclick = () => P.review ? startReview() : startSession({ ...setup });
+}
+function startReview() { const d = shuffle(dueList()).slice(0, 15); if (!d.length) { P = null; location.hash = 'review'; route(); return; } startSession(setup, d, 'Review pile'); }
+function viewReview() {
+  if (P && P.review) return viewQuestion();
+  const d = dueList();
+  $('#view').innerHTML = `<h1>Review pile</h1><p class="lede">Questions you missed come back here right away, then again after 1, 3, 7 and 14 days once you get them right.</p>
+    ${d.length ? `<button class="btn pri" id="rs">Review ${Math.min(d.length, 15)} now</button>` : '<p>Nothing due right now. Missed questions will show up here.</p><a class="btn pri" href="#practice">Go practice</a>'}`;
+  if (d.length) $('#rs').onclick = startReview;
+}
+
+/* ---------- playground ---------- */
+function viewPlayground() {
+  const code = S.draft || PRESETS[0].code;
+  $('#view').innerHTML = `<h1>Playground</h1><p class="lede">Write your own code and step through it. Works with int, double, boolean, String, Math, if, while, for, and static methods (everything in Units 1 and 2).</p>
+    <div class="row" style="margin-bottom:10px"><select id="pre" aria-label="Load an example"><option value="">Load an example...</option>${PRESETS.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('')}</select></div>
+    <textarea class="ed" id="ed" spellcheck="false" aria-label="Java code">${esc(code)}</textarea>
+    <div class="row" style="margin-top:10px"><button class="btn" id="run">Run</button><button class="btn pri" id="stp">Step through</button></div>
+    <div id="pout"></div>`;
+  const ed = $('#ed');
+  ed.addEventListener('input', () => { S.draft = ed.value; save(); });
+  ed.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const s = ed.selectionStart; ed.setRangeText('    ', s, ed.selectionEnd, 'end'); S.draft = ed.value; save(); } });
+  $('#pre').onchange = e => { if (e.target.value === '') return; ed.value = PRESETS[+e.target.value].code; S.draft = ed.value; save(); $('#pout').innerHTML = ''; };
+  $('#run').onclick = () => { const r = quickRun(ed.value); $('#pout').innerHTML = `<div class="con" style="padding:12px 0 0"><h5>Console output</h5><pre>${r.bad ? '' : esc(r.text)}${r.bad ? '<span class="er">' + esc(r.text) + '</span>' : ''}</pre></div>`; };
+  $('#stp').onclick = () => mountDebugger($('#pout'), ed.value);
+}
+
+/* ---------- routing ---------- */
+const FILES = { home: 'Home.java', practice: 'Practice.java', review: 'ReviewPile.java', playground: 'Playground.java' };
+function route() {
+  const h = location.hash.slice(1) || 'home';
+  renderTree(h);
+  if (h.startsWith('learn-')) { const id = h.slice(6).replace('-', '.'); const t = byTopic(id); $('#tab').textContent = t ? t.file : 'Home.java'; viewLearn(id); }
+  else {
+    $('#tab').textContent = FILES[h] || 'Home.java';
+    if (h === 'practice') { if (P && !P.review) viewQuestion(); else viewPracticeSetup(); }
+    else if (h === 'review') viewReview();
+    else if (h === 'playground') viewPlayground();
+    else viewHome();
+  }
+  $('#app').classList.remove('open');
+  $('#main').scrollTop = 0;
+}
+window.addEventListener('hashchange', () => { if (P && P.i >= P.qs.length && !location.hash.match(/practice|review/)) P = null; route(); });
+$('#menu').onclick = () => $('#app').classList.toggle('open');
+$('#scrim').onclick = () => $('#app').classList.remove('open');
+$('#tree').addEventListener('click', e => {
+  const a = e.target.closest('a'); if (!a) return;
+  const h = a.getAttribute('href').slice(1);
+  if (h === 'practice' && P && P.i >= P.qs.length) P = null;
+  if (h === 'practice' && P && P.review) P = null;
+  if (h === location.hash.slice(1)) route();
+});
+document.addEventListener('keydown', e => {
+  if (!P || !/^(practice|review)$/.test(location.hash.slice(1)) || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const k = 'abcd1234'.indexOf(e.key.toLowerCase());
+  if (k >= 0 && !P.answered) { const b = document.querySelector(`.opt[data-k="${k % 4}"]`); if (b) b.click(); }
+  if (e.key === 'Enter' && P.answered && document.activeElement.id !== 'nx') { const n = $('#nx'); if (n) n.click(); }
+});
+route();
+}
+
+</script>
+</body>
+</html>
